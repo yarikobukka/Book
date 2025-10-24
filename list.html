@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Supabase 書籍登録テスト</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.43.3/dist/umd/supabase.min.js"></script>
+  <link rel="stylesheet" href="list.css">
+</head>
+<body>
+  <h1>Book List</h1>
+
+  <form id="bookForm">
+    <input type="hidden" id="editId">
+    <div class="form-input">
+      <table class="form-table">
+        <tr><td><input type="text" id="title" placeholder="タイトル" required></td></tr>
+        <tr><td><input type="text" id="yomigana" placeholder="よみがな"></td></tr>
+        <tr><td><input type="text" id="author" placeholder="著者"></td></tr>
+      </table>
+      <button id="submitBtn" class="button" type="submit">登録</button>
+    </div>
+  </form>
+
+  <div class="content">
+    <h2>登録済みの書籍</h2>
+    <div class="selectOrder-wrapper">
+      <span class="chevron-icon"></span>
+      <select id="selectOrder">
+        <option value="new" selected>新しい順</option>
+        <option value="old">古い順</option>
+        <option value="reading">タイトル順</option>
+      </select>
+    </div>
+    <ul id="bookList"></ul>
+  </div>
+
+  <script>
+    const { createClient } = supabase;
+    const client = createClient(
+      "https://urfhwurcnoexapukhcey.supabase.co",
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVyZmh3dXJjbm9leGFwdWtoY2V5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkyMDM5MzAsImV4cCI6MjA3NDc3OTkzMH0.bHVwIfrGVm_pbbSh1UByqgkE3Uq22a6IXcYnZmcJo-Y"
+    );
+
+    let currentSort = "new";
+
+    // 一覧を読み込む
+    async function loadBooks() {
+      let { data, error } = await client.from("books").select("*");
+
+      if (error) {
+        console.error("読み込み失敗:", error);
+        return;
+      }
+
+      if (currentSort === "reading") {
+        data.sort((a, b) => {
+          const textA = a.yomigana || a.title || "";
+          const textB = b.yomigana || b.title || "";
+          return textA.localeCompare(textB, 'ja');
+        });
+      } else if (currentSort === "old") {
+        data.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+      } else {
+        data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      }
+
+      // リスト生成
+      const list = document.getElementById("bookList");
+      list.innerHTML = "";
+
+      // 日付フォーマット
+      function formatDate(created_at) {
+        const now = new Date();
+        const date = new Date(created_at);
+        const diffMs = now - date;
+        const diffSec = Math.floor(diffMs / 1000);
+        const diffMin = Math.floor(diffSec / 60);
+        const diffHour = Math.floor(diffMin / 60);
+        const diffDay = Math.floor(diffHour / 24);
+        const diffWeek = Math.floor(diffDay / 7);
+        const diffMonth = Math.floor(diffDay / 30);
+        const diffYear = Math.floor(diffDay / 365);
+          
+        if (diffDay === 0) {
+          if (diffHour > 0) return `${diffHour}時間前`;
+          if (diffMin > 0) return `${diffMin}分前`;
+          return "たった今";
+        } else if (diffDay === 1) return "昨日";
+        else if (diffDay === 2)return "おととい";
+        else if (diffDay >= 3 && diffDay <= 7) return `${diffDay}日前`;
+        else if (diffWeek <= 4) {
+          return `${diffWeek}週間前`;
+        } else if (diffMonth <= 11) {
+          return `${diffMonth}ヶ月前`;
+        } else {
+          return `${diffYear}年前`;
+        }
+      }
+
+      data.forEach(book => {
+        const li = document.createElement("li");
+        li.className = "card";
+        li.innerHTML = `
+          <div class="card-top">
+            <div class="title">${book.title}</div>
+            <div class="author">${book.author}</div>
+          </div>
+          <div class="card-bottom">
+            <div class="date">${formatDate(book.created_at)}</div>
+            <button class="menu-btn">⋮</button>
+            <div class="menu">
+              <button class="edit-btn">編集</button>
+              <button class="delete-btn">削除</button>
+            </div>
+          </div>
+        `;
+
+        // メニュー開閉
+        const menuBtn = li.querySelector(".menu-btn");
+        const menu = li.querySelector(".menu");
+
+        menuBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+
+          // 他のメニューを閉じる
+          document.querySelectorAll(".menu.open").forEach(m => {
+            m.classList.remove("open");
+          });
+
+          // すでに開いていたら閉じる
+          if (menu.classList.contains("open")) {
+            menu.classList.remove("open");
+            document.body.removeChild(menu);
+            li.appendChild(menu);
+            return;
+          }
+
+          // メニューをbody直下に移動して表示
+          document.body.appendChild(menu);
+          const rect = menuBtn.getBoundingClientRect();
+          menu.style.position = "fixed";
+          menu.style.top = `${rect.bottom + 4}px`;
+          menu.style.left = `${rect.right - 80}px`; // 横位置調整
+          menu.style.zIndex = 9999;
+          menu.classList.add("open");
+
+          // 外側クリックで閉じる
+          const closeMenu = (event) => {
+            if (!menu.contains(event.target) && event.target !== menuBtn) {
+              menu.classList.remove("open");
+              document.body.removeChild(menu);
+              li.appendChild(menu);
+              document.removeEventListener("click", closeMenu);
+            }
+          };
+
+          setTimeout(() => document.addEventListener("click", closeMenu), 0);
+        });
+
+        // 編集ボタン
+        li.querySelector(".edit-btn").onclick = (e) => {
+          e.stopPropagation();
+          editBook(book);
+          menu.classList.remove("open");
+          if (menu.parentNode === document.body) {
+            document.body.removeChild(menu);
+            li.appendChild(menu);
+          }
+        };
+
+        // 削除ボタン
+        li.querySelector(".delete-btn").onclick = (e) => {
+          e.stopPropagation();
+          deleteBook(book.id);
+          menu.classList.remove("open");
+        };
+
+        list.appendChild(li);
+      });
+    }
+
+    // 登録 or 更新
+    document.getElementById("bookForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const title = document.getElementById("title").value.trim();
+      const yomigana = document.getElementById("yomigana").value.trim();
+      const author = document.getElementById("author").value.trim();
+      const editId = document.getElementById("editId").value;
+
+      if (!title) {
+        alert("タイトルは必須です！");
+        return;
+      }
+
+      if (editId) {
+        const { error } = await client
+          .from("books")
+          .update({ title, yomigana, author })
+          .eq("id", editId);
+        if (error) alert("更新失敗: " + error.message);
+        else alert("更新しました！");
+      } else {
+        const { error } = await client
+          .from("books")
+          .insert([{ title, yomigana, author }]);
+        if (error) alert("登録失敗: " + error.message);
+        else alert("登録しました！");
+      }
+
+      e.target.reset();
+      document.getElementById("editId").value = "";
+      document.getElementById("submitBtn").textContent = "登録";
+      loadBooks();
+    });
+
+    // 編集
+    function editBook(book) {
+      document.getElementById("title").value = book.title;
+      document.getElementById("yomigana").value = book.yomigana;
+      document.getElementById("author").value = book.author;
+      document.getElementById("editId").value = book.id;
+      document.getElementById("submitBtn").textContent = "更新";
+    }
+
+    // 削除
+    async function deleteBook(id) {
+      if (!confirm("本当に削除しますか？")) return;
+      const { error } = await client.from("books").delete().eq("id", id);
+      if (error) alert("削除失敗: " + error.message);
+      else alert("削除しました！");
+      loadBooks();
+    }
+
+    document.getElementById("selectOrder").addEventListener("change", (e) => {
+      currentSort = e.target.value;
+      loadBooks();
+    });
+
+    // 初回読み込み
+    loadBooks();
+  </script>
+</body>
+</html>

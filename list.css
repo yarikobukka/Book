@@ -1,0 +1,179 @@
+h1 {
+  text-align: center;
+  margin-top: 40px;
+  margin-bottom: 40px;
+  color: rgb(30, 56, 130);
+}
+
+h2 {
+  text-align: center;
+  margin-top: 40px;
+  margin-bottom: 20px;
+  color: rgb(30, 56, 130);
+}
+
+.form-input {
+  text-align: center;
+  margin-bottom: 40px;
+}
+.form-table {
+  margin: 0 auto;
+  padding-bottom: 12px;
+}
+
+.button {
+	display: block;
+	text-align: center;
+	text-decoration: none;
+	width: 100px;
+  padding-left: 20px;
+  padding-right: 20px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+	margin: auto;
+	font-weight: bold;
+	border: 2px solid rgb(30, 56, 130);
+	color: rgb(30, 56, 130);
+  background-color: #ffffff;
+	border-radius: 100vh;
+	transition: 0.5s;
+}
+.button:hover {
+	color: #ffffff;
+	background: rgb(30, 56, 130);
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#bookList {
+  display: flex;
+  flex-direction: column;
+  list-style: none;
+  padding: 0;
+  width: fit-content;
+  align-items: center;
+}
+.card {
+  background-color: #d4eef1; 
+  margin: 8px;
+  border-radius: 8px;
+  padding: 10px 40px 10px 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  transition: transform 0.2s, box-shadow 0.2s;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 100%;
+  height: fit-content;
+  overflow: visible;
+  z-index: auto;
+}
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.card-bottom {
+  display: flex;
+}
+
+.title {
+  text-align: left;
+  white-space: nowrap;
+  flex-grow: 1;
+  width: fit-content;
+}
+.author{
+  text-align: right;
+  float: right;
+  width: fit-content;
+  margin-left: auto;
+  white-space: nowrap;
+}
+.date {
+  text-align: right;
+  color: #a9a9a9;
+  width: 100%;
+}
+
+.menu-btn {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+}
+.menu {
+  display: none;
+  position: absolute;
+  right: 10px;
+  top: 35px;
+  background: white;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  width: fit-content;
+  padding: 0;
+}
+.menu.open {
+  display: block;
+}
+.menu button {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+}
+.menu button:hover {
+  background: #eee;
+}
+
+.selectOrder-wrapper {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  width: 100%;
+  gap: 4px;
+  margin-bottom: 20px;
+}
+select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-color: white;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  height: 36px;
+  font-size: 16px;
+  outline: none;
+  cursor: pointer;
+  padding-left: 8px;
+  padding-right: 30px;
+  border: 0;
+}
+.chevron-icon {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border: 1.5px solid;
+  border-left: none;
+  border-bottom: none;
+  transform: rotate(135deg) translateY(4px);
+  margin-top: 2px;
+  pointer-events: none;
+}
