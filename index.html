@@ -201,13 +201,11 @@
           .update({ title, yomigana, author })
           .eq("id", editId);
         if (error) alert("更新失敗: " + error.message);
-        else alert("更新しました！");
       } else {
         const { error } = await client
           .from("books")
           .insert([{ title, yomigana, author }]);
         if (error) alert("登録失敗: " + error.message);
-        else alert("登録しました！");
       }
 
       e.target.reset();
