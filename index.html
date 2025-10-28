@@ -244,7 +244,7 @@
 
     async function fetchRecommendations(title, author) {
       try {
-        const response = await fetch("https://あなたのアプリ名.onrender.com/api/books", {
+        const response = await fetch("https://backend-5x35.onrender.com/api/books", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ title, author })
@@ -265,7 +265,7 @@
     }
 
     // フォーム送信時に呼び出す
-    document.querySelector("#recommendBtn").addEventListener("click", async () => {
+    document.querySelector("#submitBtn").addEventListener("click", async () => {
       const title = document.querySelector("#title").value.trim();
       const author = document.querySelector("#author").value.trim();
 
