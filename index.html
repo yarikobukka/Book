@@ -282,8 +282,8 @@
         container.innerHTML = "";
         Object.entries(data.books).forEach(([keyword, book]) => {
           const div = document.createElement("div");
-          div.className = "book-card";
-          div.innerHTML = `<b>${keyword}</b>: 『${book.title}』 - ${book.author}`;
+          div.className = "recommendCard";
+          div.innerHTML = `${book.title} - ${book.author}`;
           container.appendChild(div);
         });
       } else {
