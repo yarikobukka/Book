@@ -279,12 +279,25 @@
       if (data && data.books) {
         const container = document.querySelector("#result");
         container.innerHTML = "";
+
+        // テーブル作成
+        const table = document.createElement("table");
+        table.className = "recommendTable";
+
+        //　テーブルの中身
+        const tbody = document.createElement("tbody");
         Object.entries(data.books).forEach(([keyword, book]) => {
-          const div = document.createElement("div");
-          div.className = "recommendCard";
-          div.innerHTML = `${book.title} - ${book.author}`;
-          container.appendChild(div);
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${keyword}</td>
+            <td>${book.title}</td>
+            <td>${book.author}</td>
+          `; 
+          tbody.appendChild(tr);
         });
+        table.appendChild(tr);
+
+        container.appendChild(table);
       } else {
         document.querySelector("#result").textContent = "関連書籍が見つかりませんでした。";
       }
