@@ -13,7 +13,7 @@
     <input type="hidden" id="editId">
     <div class="form-input">
       <table class="form-table">
-        <tr><td><input type="text" id="title" placeholder="タイトル" required></td></tr>
+        <tr><td><input type="text" id="title" placeholder="タイトル"></td></tr>
         <tr><td><input type="text" id="yomigana" placeholder="よみがな"></td></tr>
         <tr><td><input type="text" id="author" placeholder="著者"></td></tr>
       </table>
@@ -279,6 +279,11 @@
       if (data && data.books) {
         const container = document.querySelector("#result");
         container.innerHTML = "";
+
+        // 見出し作成
+        const heading = document.createElement("h2");
+        heading.textContent = "あなたにおすすめの書籍";
+        container.appendChild(heading);
 
         // テーブル作成
         const table = document.createElement("table");
