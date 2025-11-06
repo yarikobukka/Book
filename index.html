@@ -44,6 +44,41 @@
 
     let currentSort = "new";
 
+    // ひらがな強制スクリプト
+    const yomiganaInput = document.getElementById("yomigana");
+
+    let isComposing = false;
+
+    // IME入力が開始された時
+    yomiganaInput.addEventListener("compositionstart", () => {
+      isComposing = true;
+    });
+
+    // IME確定後
+    yomiganaInput.addEventListener("compositionend", () => {
+      isComposing = false;
+      convertToHiragana();
+    });
+
+    // 入力中に常に監視
+    yomiganaInput.addEventListener("input", () => {
+      if (!isComposing) convertToHiragana();
+    });
+
+    function convertToHiragana() {
+      let v = yomiganaInput.value;
+
+      // カタカナ → ひらがな
+      v = v.normalize("NFKC").replace(/[\u30a1-\u30f6]/g, (char) =>
+        String.fromCharCode(char.charCodeAt(0) - 0x60)
+      );
+
+      // ひらがなと「ー」だけ許可
+      v = v.replace(/[^ぁ-んー\s]/g, "");
+
+      yomiganaInput.value = v;
+    }
+
     // 一覧を読み込む
     async function loadBooks() {
       let { data, error } = await client.from("books").select("*");
