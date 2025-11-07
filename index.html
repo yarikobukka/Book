@@ -13,9 +13,9 @@
     <input type="hidden" id="editId">
     <div class="form-input">
       <table class="form-table">
-        <tr><td><input type="text" id="title" placeholder="タイトル"></td></tr>
-        <tr><td><input type="text" id="yomigana" placeholder="よみがな"></td></tr>
-        <tr><td><input type="text" id="author" placeholder="著者"></td></tr>
+        <tr><td><input type="text" id="title" placeholder="タイトル" class="input"></td></tr>
+        <tr><td><input type="text" id="yomigana" placeholder="よみがな" class="input"></td></tr>
+        <tr><td><input type="text" id="author" placeholder="著者" class="input"></td></tr>
       </table>
       <button id="submitBtn" class="button" type="submit">登録</button>
     </div>
@@ -24,6 +24,7 @@
   <div class="content">
     <div id="result"></div>
     <h2>登録済みの書籍</h2>
+    <input type="text" id="searchBox" placeholder="検索" class="input"/>
     <div class="selectOrder-wrapper">
       <span class="chevron-icon"></span>
       <select id="selectOrder">
@@ -136,6 +137,7 @@
       data.forEach(book => {
         const li = document.createElement("li");
         li.className = "card";
+        li.dataset.yomigana = book.yomigana || "";
         li.innerHTML = `
           <div class="card-top">
             <div class="title">${book.title}</div>
@@ -249,6 +251,25 @@
       document.getElementById("submitBtn").textContent = "登録";
       loadBooks();
     });
+
+    // 検索機能
+    document.getElementById("searchBox").addEventListener("input", (e) => {
+      const word = e.target.value.toLowerCase();
+      const cards = document.querySelectorAll("#bookList .card");
+
+      cards.forEach(card => {
+        const title = card.querySelector(".title").textContent.toLowerCase();
+        const author = card.querySelector(".author").textContent.toLowerCase();
+        const yomigana = card.dataset.yomigana?.toLowerCase() || "";
+
+        if (title.includes(word) || author.includes(word) || yomigana.includes(word)) {
+          card.style.display = "";
+        } else {
+          card.style.display = "none";
+        }
+      });
+    });
+
 
     // 編集
     function editBook(book) {
