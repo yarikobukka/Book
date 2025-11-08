@@ -287,7 +287,7 @@
           isMatch = terms.some(t => text.includes(t));
         }
     
-        card.styledisplay = isMatch ? "" : "none";
+        card.style.display = isMatch ? "" : "none";
         if (isMatch) hitCount++;
       });
 
