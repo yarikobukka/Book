@@ -25,16 +25,15 @@
     <div id="result"></div>
     <h2>登録済みの書籍</h2>
     <div class="search-wrapper">
-      <div class="search-box-container"></div>
+      <div class="search-box-container">
         <input type="text" id="searchBox" placeholder="検索" class="input"/>
-        <div class="selectOrder-wrapper">
-          <button class="search-mode">⋮</button>
-          <div class="menu">
-            <p>検索方法を選んでください</p>
-            <button class="and">完全一致</button>
-            <button class="or">部分一致</button>
-          </div>
+        <button class="search-mode">⋮</button>
+        <div class="menu">
+          <p>検索方法を選んでください</p>
+          <button class="and">完全一致</button>
+          <button class="or">部分一致</button>
         </div>
+      </div>
     </div>
     <div class="selectOrder-wrapper">
       <span class="chevron-icon"></span>
@@ -307,10 +306,10 @@
 
     let searchMode = "or";
 
-    const menuBtn = document.querySelector(".search-mode");
-    const menuBox = document.querySelector(".selectOrder-wrapper .menu");
-    const btnAND = document.querySelector(".selectOrder-wrapper .and");
-    const btnOR = document.querySelector(".selectOrder-wrapper .or");
+    const menuBtn = document.querySelector(".search-box-container .search-mode");
+    const menuBox = document.querySelector(".search-box-container .menu");
+    const btnAND = document.querySelector(".search-box-container .and");
+    const btnOR = document.querySelector(".search-box-container .or");
 
     menuBtn.addEventListener("click", (e) => {
       e.stopPropagation();
