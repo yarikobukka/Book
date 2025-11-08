@@ -1,17 +1,23 @@
+/* ===== 全体 ===== */
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+}
+
 h1 {
   text-align: center;
-  margin-top: 40px;
-  margin-bottom: 40px;
   color: rgb(30, 56, 130);
+  margin: 40px 0;
 }
 
 h2 {
   text-align: center;
-  margin-top: 40px;
-  margin-bottom: 20px;
   color: rgb(30, 56, 130);
+  margin: 40px 0 20px 0;
 }
 
+/* ===== フォーム ===== */
 .form-input {
   text-align: center;
   margin-bottom: 40px;
@@ -27,46 +33,117 @@ h2 {
   border-radius: 8px;
   font-size: 16px;
 }
-
 .button {
-	display: block;
-	text-align: center;
-	text-decoration: none;
-	width: 100px;
-  padding-left: 20px;
-  padding-right: 20px;
-  padding-top: 8px;
-  padding-bottom: 8px;
-	margin: auto;
-	font-weight: bold;
-	border: 2px solid rgb(30, 56, 130);
-	color: rgb(30, 56, 130);
+  display: block;
+  text-align: center;
+  text-decoration: none;
+  width: 100px;
+  padding: 8px 20px;
+  margin: auto;
+  font-weight: bold;
+  border: 2px solid rgb(30, 56, 130);
+  color: rgb(30, 56, 130);
   background-color: #ffffff;
-	border-radius: 100vh;
-	transition: 0.5s;
+  border-radius: 100vh;
+  transition: 0.5s;
+  cursor: pointer;
 }
 .button:hover {
-	color: #ffffff;
-	background: rgb(30, 56, 130);
+  color: #ffffff;
+  background: rgb(30, 56, 130);
 }
 
+/* ===== コンテンツ ===== */
 .content {
   display: flex;
   flex-direction: column;
   align-items: center;
+  width: 100%;
 }
 
+/* ===== 検索ボックス内ボタン ===== */
+.search-wrapper {
+  margin-bottom: 16px;
+  width: 100%;
+  max-width: 600px;
+}
+.search-box-container {
+  position: relative;
+  display: block;
+  width: 100%;
+}
+#searchBox {
+  width: 100%;
+  padding-right: 40px;
+  height: 36px;
+  box-sizing: border-box;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  padding-left: 8px;
+  font-size: 14px;
+}
+.search-box-container .search-mode {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 36px;
+  height: 100%;
+  border: none;
+  background-color: transparent;
+  cursor: pointer;
+  font-size: 16px;
+  color: #555;
+}
+.search-box-container .search-mode:hover {
+  background-color: rgba(0,0,0,0.05);
+  border-radius: 0 6px 6px 0;
+}
+.search-box-container .menu {
+  display: none;
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  z-index: 999;
+  padding: 4px 0;
+  min-width: 120px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+.search-box-container .menu button {
+  display: block;
+  width: 100%;
+  border: none;
+  background: none;
+  padding: 6px 12px;
+  text-align: left;
+  cursor: pointer;
+  font-size: 14px;
+}
+.search-box-container .menu button:hover {
+  background-color: #f0f0f0;
+}
+.search-box-container .menu.open {
+  display: block;
+}
+
+/* ===== ブックリスト ===== */
 #bookList {
   display: flex;
   flex-direction: column;
   list-style: none;
   padding: 0;
-  width: fit-content;
+  width: 100%;
+  max-width: 600px;
   align-items: center;
+  margin: 0 auto;
 }
+
+/* ===== カード ===== */
 .card {
-  background-color: #d4eef1; 
-  margin: 8px;
+  background-color: #d4eef1;
+  margin: 8px auto;
   border-radius: 8px;
   padding: 10px 40px 10px 10px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
@@ -74,16 +151,15 @@ h2 {
   position: relative;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
   width: 100%;
-  height: fit-content;
+  max-width: 500px;
   overflow: visible;
-  z-index: auto;
 }
 .card:hover {
   transform: translateY(-4px);
   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
 }
+
 .card-top {
   display: flex;
   justify-content: space-between;
@@ -91,6 +167,9 @@ h2 {
 }
 .card-bottom {
   display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
 }
 
 .title {
@@ -99,19 +178,18 @@ h2 {
   flex-grow: 1;
   width: fit-content;
 }
-.author{
+.author {
   text-align: right;
-  float: right;
   width: fit-content;
   margin-left: auto;
   white-space: nowrap;
 }
+
 .date {
   text-align: right;
   color: #a9a9a9;
   width: 100%;
 }
-
 .menu-btn {
   position: absolute;
   right: 10px;
@@ -147,43 +225,4 @@ h2 {
 }
 .menu button:hover {
   background: #eee;
-}
-
-.selectOrder-wrapper {
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-end;
-  width: 100%;
-  gap: 4px;
-  margin-bottom: 20px;
-}
-select {
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-  background-color: white;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  height: 36px;
-  font-size: 16px;
-  outline: none;
-  cursor: pointer;
-  padding-left: 8px;
-  padding-right: 30px;
-  border: 0;
-}
-.chevron-icon {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border: 1.5px solid;
-  border-left: none;
-  border-bottom: none;
-  transform: rotate(135deg) translateY(4px);
-  margin-top: 2px;
-  pointer-events: none;
-}
-
-.recommendCard {
-  position: relative;
 }
