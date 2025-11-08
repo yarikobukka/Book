@@ -26,6 +26,14 @@
     <h2>登録済みの書籍</h2>
     <input type="text" id="searchBox" placeholder="検索" class="input"/>
     <div class="selectOrder-wrapper">
+      <button class="search-mode">⋮</button>
+      <div class="menu">
+        <p>検索方法を選んでください</p>
+        <button class="and">完全一致</button>
+        <button class="or">部分一致</button>
+      </div>
+    </div>
+    <div class="selectOrder-wrapper">
       <span class="chevron-icon"></span>
       <select id="selectOrder">
         <option value="new" selected>新しい順</option>
@@ -34,6 +42,7 @@
       </select>
     </div>
     <ul id="bookList"></ul>
+    <p id="noResult" style="display:none;">該当する書籍が見つかりません</p>
   </div>
 
   <script>
@@ -253,23 +262,75 @@
     });
 
     // 検索機能
-    document.getElementById("searchBox").addEventListener("input", (e) => {
-      const word = e.target.value.toLowerCase();
+
+    function runSearch() {
+      const word = document.getElementById("searchBox").value.toLowerCase().trim();
       const cards = document.querySelectorAll("#bookList .card");
+      const noResult = document.getElementById("noResult");
+
+      let hitCount = 0;
+      const terms = word.split(/\s+/).filter(Boolean);
 
       cards.forEach(card => {
-        const title = card.querySelector(".title").textContent.toLowerCase();
-        const author = card.querySelector(".author").textContent.toLowerCase();
-        const yomigana = card.dataset.yomigana?.toLowerCase() || "";
+        const text =
+          card.querySelector(".title").textContent.toLowerCase() + " " +
+          card.querySelector(".author").textContent.toLowerCase() + " " +
+          (card.dataset.yomigana?.toLowerCase() || "");
 
-        if (title.includes(word) || author.includes(word) || yomigana.includes(word)) {
-          card.style.display = "";
-        } else {
-          card.style.display = "none";
+        let isMatch;
+
+        if (rearchMode === "and") {
+          // AND検索（完全一致）
+          isMatch = terms.every(t => text.includes(t));
+        }else {
+          // OR検索（部分一致）
+          isMatch = terms.some(t => text.includes(t));
         }
+    
+        card.styledisplay = isMatch ? "" : "none";
+        if (isMatch) hitCount++;
       });
+
+      noResult.style.display = hitCount === 0 ? "block" : "none";
+    }
+
+    document.getElementById("searchBox").addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        e.target.blur();
+        runSearch();
+      }
     });
 
+    let searchMode = "or";
+
+    const menuBtn = document.querySelector(".search-mode");
+    const menuBox = document.querySelector(".selectOrder-wrapper .menu");
+    const btnAND = document.querySelector(".selectOrder-wrapper .and");
+    const btnOR = document.querySelector(".selectOrder-wrapper .or");
+
+    menuBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      menuBox.classList.toggle("open");
+    });
+
+    btnAND.addEventListener("click", () => {
+      searchMode = "and";
+      menuBox.classList.remove("open");
+      runSearch();
+    });
+
+    btnOR.addEventListener("click", () => {
+      searchMode = "or";
+      menuBox.classList.remove("open");
+      runSearch();
+    });
+
+    document.addEventListener("click", (e) => {
+      if (!menuBox.contains(e.target) && e.target !== menuBtn) {
+        menuBox.classList.remove("open");
+      }
+    });
 
     // 編集
     function editBook(book) {
