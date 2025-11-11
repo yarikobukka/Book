@@ -123,6 +123,10 @@ h2 {
 .search-box-container .menu button:hover {
   background-color: #f0f0f0;
 }
+.search-box-container .menu button.active {
+  background-color: #e0e0e0;
+  font-weight: bold;
+}
 .search-box-container .menu.open {
   display: block;
 }

@@ -270,6 +270,12 @@
       const cards = document.querySelectorAll("#bookList .card");
       const noResult = document.getElementById("noResult");
 
+      if (word === "") {
+        cards.forEach(card => card.style.display = "");
+        noResult.style.display = "none";
+        return;
+      }
+
       let hitCount = 0;
       const terms = word.split(/\s+/).filter(Boolean);
 
@@ -311,6 +317,11 @@
     const btnAND = document.querySelector(".search-box-container .and");
     const btnOR = document.querySelector(".search-box-container .or");
 
+    function updateSearchModeUI() {
+      btnAND.classList.toggle("active", searchMode === "and");
+      btnOR.classList.toggle("active", searchMode === "or");
+    }
+
     menuBtn.addEventListener("click", (e) => {
       e.stopPropagation();
       menuBox.classList.toggle("open");
@@ -318,12 +329,14 @@
 
     btnAND.addEventListener("click", () => {
       searchMode = "and";
+      updateSearchModeUI();
       menuBox.classList.remove("open");
       runSearch();
     });
 
     btnOR.addEventListener("click", () => {
       searchMode = "or";
+      updateSearchModeUI();
       menuBox.classList.remove("open");
       runSearch();
     });
@@ -333,6 +346,8 @@
         menuBox.classList.remove("open");
       }
     });
+
+    updateSearchModeUI();
 
     // 編集
     function editBook(book) {
