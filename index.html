@@ -241,6 +241,23 @@
         return;
       }
 
+      // 重複チェック
+      const { data: exist, error: existError } = await client
+        .from("books")
+        .select("*")
+        .eq("title", title)
+        .eq("author", author);
+      
+      if (existError) {
+        alert("確認エラー: " + existError.message);
+        return;
+      }
+
+      if (!editId && exist.length > 0) {
+        alert("その本は既に登録済みです！");
+        return;
+      }
+
       if (editId) {
         const { error } = await client
           .from("books")
