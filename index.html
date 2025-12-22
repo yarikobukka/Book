@@ -2,49 +2,69 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>Supabase 書籍登録テスト</title>
+  <title>Biblio Radar</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.43.3/dist/umd/supabase.min.js"></script>
   <link rel="stylesheet" href="list.css">
 </head>
 <body>
-  <h1>Book List</h1>
+  <!-- ログイン・新規登録用画面-->
 
-  <form id="bookForm">
-    <input type="hidden" id="editId">
-    <div class="form-input">
-      <table class="form-table">
-        <tr><td><input type="text" id="title" placeholder="タイトル" class="input"></td></tr>
-        <tr><td><input type="text" id="yomigana" placeholder="よみがな" class="input"></td></tr>
-        <tr><td><input type="text" id="author" placeholder="著者" class="input"></td></tr>
-      </table>
-      <button id="submitBtn" class="button" type="submit">登録</button>
-    </div>
-  </form>
+  <div id="loginScreen">
+    <h2>Biblio Radarへようこそ!</h2>
 
-  <div class="content">
-    <div id="result"></div>
-    <h2>登録済みの書籍</h2>
-    <div class="search-wrapper">
-      <div class="search-box-container">
-        <input type="text" id="searchBox" placeholder="検索" class="input"/>
-        <button class="search-mode">⋮</button>
-        <div class="menu">
-          <p>検索方法を選んでください</p>
-          <button class="and">完全一致</button>
-          <button class="or">部分一致</button>
+    <input type="email" id="loginEmail" placeholder="メールアドレス" required>
+    <input type="password" id="loginPassword" placeholder="パスワード" required>
+      
+    <button id="loginBtn">ログイン</button>
+    <button id="signupBtn">新規登録</button>
+    <button id="guestBtn">ログインせずに使う</button>
+
+    <p id="loginMessage"></p>
+  </div>
+
+  <div id="mainContent" style="display:none;">
+    <button id="logoutBtn">ログアウト</button>
+    <button id="backToLoginBtn">ログイン</button>
+
+    <h1>Book List</h1>
+
+    <form id="bookForm">
+      <input type="hidden" id="editId">
+      <div class="form-input">
+        <table class="form-table">
+          <tr><td><input type="text" id="title" placeholder="タイトル" class="input"></td></tr>
+          <tr><td><input type="text" id="yomigana" placeholder="よみがな" class="input"></td></tr>
+          <tr><td><input type="text" id="author" placeholder="著者" class="input"></td></tr>
+        </table>
+        <button id="submitBtn" class="button" type="submit">登録</button>
+      </div>
+    </form>
+
+    <div class="content">
+      <div id="result"></div>
+      <h2>登録済みの書籍</h2>
+      <div class="search-wrapper">
+        <div class="search-box-container">
+          <input type="text" id="searchBox" placeholder="検索" class="input"/>
+          <button class="search-mode">⋮</button>
+          <div class="menu">
+            <p>検索方法を選んでください</p>
+            <button class="and">完全一致</button>
+            <button class="or">部分一致</button>
+          </div>
         </div>
       </div>
+      <div class="selectOrder-wrapper">
+        <span class="chevron-icon"></span>
+        <select id="selectOrder">
+          <option value="new" selected>新しい順</option>
+          <option value="old">古い順</option>
+          <option value="reading">タイトル順</option>
+        </select>
+      </div>
+      <ul id="bookList"></ul>
+      <p id="noResult" style="display:none;">該当する書籍が見つかりません</p>
     </div>
-    <div class="selectOrder-wrapper">
-      <span class="chevron-icon"></span>
-      <select id="selectOrder">
-        <option value="new" selected>新しい順</option>
-        <option value="old">古い順</option>
-        <option value="reading">タイトル順</option>
-      </select>
-    </div>
-    <ul id="bookList"></ul>
-    <p id="noResult" style="display:none;">該当する書籍が見つかりません</p>
   </div>
 
   <script>
@@ -56,44 +76,76 @@
 
     let currentSort = "new";
 
-    // ひらがな強制スクリプト
+    let currentUser = null;
+
+    function getBooksTable() {
+      return currentUser ? "books_private" : "books_public";
+    }
+
+    function updateUI() {
+      const loginScreen = document.getElementById("loginScreen");
+      const mainContent = document.getElementById("mainContent");
+      const logoutBtn = document.getElementById("logoutBtn");
+
+      if (!loginScreen || !mainContent || !logoutBtn) {
+        console.warn("UI要素が見つかりません", {
+          loginScreen,
+          mainContent,
+          logoutBtn
+        });
+        return;
+      }
+
+      if (currentUser === null) {
+        // 未ログイン（ゲスト）
+        loginScreen.style.display = "block";
+        mainContent.style.display = "block";
+        logoutBtn.style.display = "none";
+      } else {
+        //　ログイン済み
+        loginScreen.style.display = "none";
+        mainContent.style.display = "block";
+        logoutBtn.style.display = "block";
+      }
+    }
+
+    // ふりがなをひらがなに固定する
+    function normalizeTyping(v) {
+      return v.normalize("NFKC");
+    }
+
     const yomiganaInput = document.getElementById("yomigana");
 
-    let isComposing = false;
-
-    // IME入力が開始された時
-    yomiganaInput.addEventListener("compositionstart", () => {
-      isComposing = true;
-    });
-
-    // IME確定後
-    yomiganaInput.addEventListener("compositionend", () => {
-      isComposing = false;
-      convertToHiragana();
-    });
-
-    // 入力中に常に監視
-    yomiganaInput.addEventListener("input", () => {
-      if (!isComposing) convertToHiragana();
-    });
-
-    function convertToHiragana() {
-      let v = yomiganaInput.value;
-
-      // カタカナ → ひらがな
-      v = v.normalize("NFKC").replace(/[\u30a1-\u30f6]/g, (char) =>
-        String.fromCharCode(char.charCodeAt(0) - 0x60)
-      );
-
-      // ひらがなと「ー」だけ許可
-      v = v.replace(/[^ぁ-ん0-9・ー\s]/g, "");
-
-      yomiganaInput.value = v;
+    if (yomiganaInput) {
+      yomiganaInput.addEventListener("input", () => {
+        if (!isComposing) yomiganaInput.value = normalizeTyping(yomiganaInput.value);
+      });
     }
+
+    function normalizeForSave(v) {
+      return v
+        .normalize("NFKC")
+        .replace(/[\u30a1-\u30f6]/g, c =>
+          String.fromCharCode(c.charCodeAt(0) - 0x60)
+        )
+      .replace(/[^ぁ-んゔ0-9・ー＆\s]/g, "");
+    }
+
+    const saveButton = document.getElementById("submitBtn");
+
+    saveButton.addEventListener("click", () => {
+      const yomiganaRaw = document.getElementById("yomigana").value;
+      const yomigana = normalizeForSave(yomiganaRaw);
+    });
+
 
     // 一覧を読み込む
     async function loadBooks() {
-      let { data, error } = await client.from("books").select("*");
+      const tableName = getBooksTable();
+
+      const { data, error } = await client
+        .from(tableName)
+        .select("*");
 
       if (error) {
         console.error("読み込み失敗:", error);
@@ -237,13 +289,14 @@
       const author = document.getElementById("author").value.trim();
       const editId = document.getElementById("editId").value;
 
-      if (!title) {
-        return;
-      }
+      if (!title) return;
 
       // 重複チェック
+      const tableName = getBooksTable();
+      let savedSuccessfully = false;
+
       const { data: exist, error: existError } = await client
-        .from("books")
+        .from(tableName)
         .select("*")
         .eq("title", title)
         .eq("author", author);
@@ -260,23 +313,72 @@
 
       if (editId) {
         const { error } = await client
-          .from("books")
+          .from(tableName)
           .update({ title, yomigana, author })
           .eq("id", editId);
-        if (error) alert("更新失敗: " + error.message);
-        else alert("更新しました！");
+
+        if (error) {
+          alert("更新失敗: " + error.message);
+          return;
+        } else {
+          alert("更新しました！");
+          savedSuccessfully = true;
+        }
       } else {
         const { error } = await client
-          .from("books")
-          .insert([{ title, yomigana, author }]);
-        if (error) alert("登録失敗: " + error.message);
-        else alert("登録しました！");
+          .from(tableName)
+          .insert([{ title, yomigana, author, user_id: currentUser.id }]);
+
+        if (error) {
+          alert("登録失敗: " + error.message);
+          return;
+        } else {
+          alert("登録しました！");
+          savedSuccessfully = true;
+        }
       }
 
+      if (savedSuccessfully && title && author) {
+        document.querySelector("#result").textContent = "推薦中...";
+        const data = await fetchRecommendations(title, author);
+
+        if (data && data.books) {
+          const container = document.querySelector("#result");
+          container.innerHTML = "";
+
+          const heading = document.createElement("h2");
+          heading.textContent = "おすすめの本";
+          container.appendChild(heading);
+
+          const table = document.createElement("table");
+          table.className = "recommendTable";
+
+          const tbody = document.createElement("tbody");
+          Object.entries(data.books).forEach(([keyword, book]) => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+              <td>${keyword}</td>
+              <td>${book.title}</td>
+              <td>${book.author}</td>
+            `;
+            tbody.appendChild(tr);
+          });
+        
+          table.appendChild(tbody);
+          container.appendChild(table);
+
+        } else {
+          document.querySelector("#result").textContent = "関連書籍は見つかりませんでした。";
+        }
+      }
+
+      // 後始末
       e.target.reset();
       document.getElementById("editId").value = "";
       document.getElementById("submitBtn").textContent = "登録";
-      loadBooks();
+
+      await loadBooks();
+      updateUI();
     });
 
     // 検索機能
@@ -377,7 +479,8 @@
     // 削除
     async function deleteBook(id) {
       if (!confirm("本当に削除しますか？")) return;
-      const { error } = await client.from("books").delete().eq("id", id);
+      const tableName = getBooksTable();
+      const { error } = await client.from(tableName).delete().eq("id", id);
       if (error) alert("削除失敗: " + error.message);
       else alert("削除しました！");
       loadBooks();
@@ -388,8 +491,95 @@
       loadBooks();
     });
 
+    // ログイン
+    document.getElementById("loginBtn").addEventListener("click", async () => {
+      const email = document.getElementById("loginEmail").value;
+      const password = document.getElementById("loginPassword").value;
+      const message = document.getElementById("loginMessage");
+
+      const { data, error } = await client.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error) {
+        message.textContent = "ログイン失敗：" + error.message;
+      } else {
+        message.textContent = "ログイン成功！";
+        currentUser = data.user;
+        updateUI();
+        loadBooks();
+      }
+    });
+
+    // 新規登録
+    document.getElementById("signupBtn").addEventListener("click", async () => {
+      const email = document.getElementById("loginEmail").value;
+      const password = document.getElementById("loginPassword").value;
+      const message = document.getElementById("loginMessage");
+
+      const { data, error } = await client.auth.signUp({
+        email,
+        password
+      });
+
+      if (error) {
+        message.textContent = "登録失敗：" + error.message;
+      } else {
+        message.textContent = "登録成功！確認メールを送信しました。";
+      }
+    });
+
+    // ログイン状態の確認
+    async function checkLogin() {
+      const { data } = await client.auth.getSession();
+      if (data.session) {
+        currentUser = data.session.user;
+        console.log("ログイン中:", currentUser);
+      } else {
+        currentUser = null;
+        console.log("未ログイン:");
+      }
+    };
+
+    // ログインなし使用
+    document.getElementById("guestBtn").addEventListener("click", async () => {
+      currentUser = null;
+      updateUI();
+      await loadBooks();
+    });
+
+    // ログアウト
+    const logoutBtn = document.getElementById("logoutBtn");
+
+    logoutBtn.addEventListener("click", async () => {
+      const { error } = await client.auth.signOut();
+
+      if (error) {
+        console.error("ログアウト失敗", error);
+        alert("ログアウトに失敗しました");
+        return;
+      }
+
+      console.log("ログアウト成功");
+      currentUser = null;
+      updateUI();
+      loadBooks();
+    });
+
     // 初回読み込み
-    loadBooks();
+    (async () => {
+      const { data } = await client.auth.getSession();
+
+      if (data.session) {
+        currentUser = data.session.user;
+      } else {
+        currentUser = null;
+      }
+
+      updateUI();
+      loadBooks();
+    })();
 
     async function fetchRecommendations(title, author) {
       try {
@@ -412,51 +602,6 @@
         return null;
       }
     }
-
-    // フォーム送信時に呼び出す
-    document.querySelector("#submitBtn").addEventListener("click", async () => {
-      const title = document.querySelector("#title").value.trim();
-      const author = document.querySelector("#author").value.trim();
-
-      if (!title || !author) {
-        alert("タイトルと著者を入力してください");
-        return;
-      }
-
-      document.querySelector("#result").textContent = "推薦中...";
-      const data = await fetchRecommendations(title, author);
-
-      if (data && data.books) {
-        const container = document.querySelector("#result");
-        container.innerHTML = "";
-
-        // 見出し作成
-        const heading = document.createElement("h2");
-        heading.textContent = "あなたにおすすめの書籍";
-        container.appendChild(heading);
-
-        // テーブル作成
-        const table = document.createElement("table");
-        table.className = "recommendTable";
-
-        //　テーブルの中身
-        const tbody = document.createElement("tbody");
-        Object.entries(data.books).forEach(([keyword, book]) => {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td>${keyword}</td>
-            <td>${book.title}</td>
-            <td>${book.author}</td>
-          `; 
-          tbody.appendChild(tr);
-        });
-
-        table.appendChild(tbody);
-        container.appendChild(table);
-      } else {
-        document.querySelector("#result").textContent = "関連書籍が見つかりませんでした。";
-      }
-    });
   </script>
 </body>
 </html>
