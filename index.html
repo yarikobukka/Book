@@ -76,34 +76,39 @@
 
     let currentSort = "new";
 
+    let uiState = "login"; // "login" | "guest" | "auth"
     let currentUser = null;
 
     function getBooksTable() {
       return currentUser ? "books_private" : "books_public";
+      // ログインユーザー=> privateテーブル
+      // ゲスト=> publicテーブル
     }
 
     function updateUI() {
       const loginScreen = document.getElementById("loginScreen");
       const mainContent = document.getElementById("mainContent");
       const logoutBtn = document.getElementById("logoutBtn");
+      const backToLoginBtn = document.getElementById("backToLoginBtn");
 
-      if (!loginScreen || !mainContent || !logoutBtn) {
-        console.warn("UI要素が見つかりません", {
-          loginScreen,
-          mainContent,
-          logoutBtn
-        });
+      if (!loginScreen || !mainContent || !logoutBtn || !backToLoginBtn) {
+        console.error("UI要素が見つかりません");
         return;
       }
 
-      if (currentUser === null) {
-        // 未ログイン（ゲスト）
+      loginScreen.style.display = "none";
+      mainContent.style.display = "none";
+      logoutBtn.style.display = "none";
+      backToLoginBtn.style.display = "none";
+
+      if (uiState === "login") {
         loginScreen.style.display = "block";
+      }
+      if (uiState === "guest") {
         mainContent.style.display = "block";
-        logoutBtn.style.display = "none";
-      } else {
-        //　ログイン済み
-        loginScreen.style.display = "none";
+        backToLoginBtn.style.display = "block";
+      }
+      if (uiState === "auth") {
         mainContent.style.display = "block";
         logoutBtn.style.display = "block";
       }
@@ -118,7 +123,7 @@
 
     if (yomiganaInput) {
       yomiganaInput.addEventListener("input", () => {
-        if (!isComposing) yomiganaInput.value = normalizeTyping(yomiganaInput.value);
+        yomiganaInput.value = normalizeTyping(yomiganaInput.value);
       });
     }
 
@@ -132,12 +137,6 @@
     }
 
     const saveButton = document.getElementById("submitBtn");
-
-    saveButton.addEventListener("click", () => {
-      const yomiganaRaw = document.getElementById("yomigana").value;
-      const yomigana = normalizeForSave(yomiganaRaw);
-    });
-
 
     // 一覧を読み込む
     async function loadBooks() {
@@ -197,34 +196,41 @@
         }
       }
 
+      const menuHtml = currentUser ? `
+        <button class="menu-btn">⋮</button>
+        <div class="menu">
+          <button class="edit-btn">編集</button>
+          <button class="delete-btn">削除</button>
+        </div>
+      ` : "";
+
       data.forEach(book => {
         const li = document.createElement("li");
         li.className = "card";
         li.dataset.yomigana = book.yomigana || "";
+
         li.innerHTML = `
           <div class="card-top">
             <div class="title">${book.title}</div>
-            <div class="author">${book.author}</div>
+            <div class="author">${book.author || ""}</div>
           </div>
+
           <div class="card-bottom">
             <div class="date">${formatDate(book.created_at)}</div>
-            <button class="menu-btn">⋮</button>
-            <div class="menu">
-              <button class="edit-btn">編集</button>
-              <button class="delete-btn">削除</button>
-            </div>
+            ${menuHtml}
           </div>
         `;
 
         // メニュー開閉
-        const menuBtn = li.querySelector(".menu-btn");
-        const menu = li.querySelector(".menu");
+        if (currentUser) {
+          const menuBtn = li.querySelector(".menu-btn");
+          const menu = li.querySelector(".menu");
 
-        menuBtn.addEventListener("click", (e) => {
+          menuBtn.addEventListener("click", (e) => {
           e.stopPropagation();
 
-          // 他のメニューを閉じる
-          document.querySelectorAll(".menu.open").forEach(m => {
+            // 他のメニューを閉じる
+            document.querySelectorAll(".menu.open").forEach(m => {
             m.classList.remove("open");
           });
 
@@ -256,7 +262,8 @@
           };
 
           setTimeout(() => document.addEventListener("click", closeMenu), 0);
-        });
+          })
+        };
 
         // 編集ボタン
         li.querySelector(".edit-btn").onclick = (e) => {
@@ -285,7 +292,8 @@
       e.preventDefault();
 
       const title = document.getElementById("title").value.trim();
-      const yomigana = document.getElementById("yomigana").value.trim();
+      const yomiganaRaw = document.getElementById("yomigana").value;
+      const yomigana = normalizeForSave(yomiganaRaw);
       const author = document.getElementById("author").value.trim();
       const editId = document.getElementById("editId").value;
 
@@ -311,6 +319,8 @@
         return;
       }
 
+      let insertData = null;
+
       if (editId) {
         const { error } = await client
           .from(tableName)
@@ -324,10 +334,13 @@
           alert("更新しました！");
           savedSuccessfully = true;
         }
+
       } else {
+        insertData = { title, yomigana, author, user_id: currentUser.id };
+
         const { error } = await client
           .from(tableName)
-          .insert([{ title, yomigana, author, user_id: currentUser.id }]);
+          .insert([insertData]);
 
         if (error) {
           alert("登録失敗: " + error.message);
@@ -337,6 +350,7 @@
           savedSuccessfully = true;
         }
       }
+
 
       if (savedSuccessfully && title && author) {
         document.querySelector("#result").textContent = "推薦中...";
@@ -506,6 +520,7 @@
         message.textContent = "ログイン失敗：" + error.message;
       } else {
         message.textContent = "ログイン成功！";
+        uiState = "auth";
         currentUser = data.user;
         updateUI();
         loadBooks();
@@ -542,9 +557,18 @@
       }
     };
 
+    // ログイン成功時
+    async function onLoginSuccess(user) {
+      currentUser = user;
+      uiState = "auth";
+      updateUI();
+      await loadBooks();
+    }
+
     // ログインなし使用
     document.getElementById("guestBtn").addEventListener("click", async () => {
       currentUser = null;
+      uiState = "guest";
       updateUI();
       await loadBooks();
     });
@@ -563,24 +587,35 @@
 
       console.log("ログアウト成功");
       currentUser = null;
+      uiState = "login";
       updateUI();
-      loadBooks();
     });
 
-    // 初回読み込み
-    (async () => {
+    // ログイン画面に戻る
+    document.getElementById("backToLoginBtn").addEventListener("click", () => {
+      uiState = "login";
+      updateUI();
+    });
+
+    // 初期表示
+    document.addEventListener("DOMContentLoaded", async () => {
       const { data } = await client.auth.getSession();
 
       if (data.session) {
         currentUser = data.session.user;
+        uiState = "auth";
       } else {
         currentUser = null;
+        uiState = "login";
       }
 
       updateUI();
-      loadBooks();
-    })();
+      if (uiState !== "login") {
+        await loadBooks();
+      }
+    });
 
+    // 推薦API呼び出し
     async function fetchRecommendations(title, author) {
       try {
         const response = await fetch("https://backend-5x35.onrender.com/api/books", {
