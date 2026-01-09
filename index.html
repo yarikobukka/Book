@@ -133,7 +133,7 @@
         .replace(/[\u30a1-\u30f6]/g, c =>
           String.fromCharCode(c.charCodeAt(0) - 0x60)
         )
-      .replace(/[^ぁ-んゔ0-9・ー＆\s]/g, "");
+      .replace(/[^ぁ-んゔ0-9・！？ー＆\s]/g, "");
     }
 
     const saveButton = document.getElementById("submitBtn");
