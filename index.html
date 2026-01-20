@@ -17,7 +17,6 @@
       
     <button id="loginBtn">ログイン</button>
     <button id="signupBtn">新規登録</button>
-    <button id="guestBtn">ログインせずに使う</button>
 
     <p id="loginMessage"></p>
   </div>
@@ -76,11 +75,11 @@
 
     let currentSort = "new";
 
-    let uiState = "login"; // "login" | "guest" | "auth"
+    let uiState = "login"; // "login" | "auth"
     let currentUser = null;
 
     function getBooksTable() {
-      return currentUser ? "books_private" : "books_public";
+      return "books_private";
       // ログインユーザー=> privateテーブル
       // ゲスト=> publicテーブル
     }
@@ -104,10 +103,7 @@
       if (uiState === "login") {
         loginScreen.style.display = "block";
       }
-      if (uiState === "guest") {
-        mainContent.style.display = "block";
-        backToLoginBtn.style.display = "block";
-      }
+
       if (uiState === "auth") {
         mainContent.style.display = "block";
         logoutBtn.style.display = "block";
@@ -338,7 +334,12 @@
         }
 
       } else {
-        insertData = { title, yomigana, author, user_id: currentUser.id };
+        insertData = {
+          title,
+          yomigana,
+          author,
+          user_id: currentUser.id 
+        };
 
         const { error } = await client
           .from(tableName)
@@ -389,12 +390,11 @@
       }
 
       // 後始末
+      await loadBooks();
+      updateUI();
       e.target.reset();
       document.getElementById("editId").value = "";
       document.getElementById("submitBtn").textContent = "登録";
-
-      await loadBooks();
-      updateUI();
     });
 
     // 検索機能
@@ -565,15 +565,7 @@
       uiState = "auth";
       updateUI();
       await loadBooks();
-    }
-
-    // ログインなし使用
-    document.getElementById("guestBtn").addEventListener("click", async () => {
-      currentUser = null;
-      uiState = "guest";
-      updateUI();
-      await loadBooks();
-    });
+    };
 
     // ログアウト
     const logoutBtn = document.getElementById("logoutBtn");
