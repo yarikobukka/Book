@@ -231,57 +231,60 @@
             // 他のメニューを閉じる
             document.querySelectorAll(".menu.open").forEach(m => {
             m.classList.remove("open");
-          });
+            });
 
-          // すでに開いていたら閉じる
-          if (menu.classList.contains("open")) {
-            menu.classList.remove("open");
-            document.body.removeChild(menu);
-            li.appendChild(menu);
-            return;
-          }
-
-          // メニューをbody直下に移動して表示
-          document.body.appendChild(menu);
-          const rect = menuBtn.getBoundingClientRect();
-          menu.style.position = "fixed";
-          menu.style.top = `${rect.bottom + 4}px`;
-          menu.style.left = `${rect.right - 80}px`; // 横位置調整
-          menu.style.zIndex = 9999;
-          menu.classList.add("open");
-
-          // 外側クリックで閉じる
-          const closeMenu = (event) => {
-            if (!menu.contains(event.target) && event.target !== menuBtn) {
+            // すでに開いていたら閉じる
+            if (menu.classList.contains("open")) {
               menu.classList.remove("open");
               document.body.removeChild(menu);
               li.appendChild(menu);
-              document.removeEventListener("click", closeMenu);
+              return;
             }
-          };
+
+            // メニューをbody直下に移動して表示
+            document.body.appendChild(menu);
+            const rect = menuBtn.getBoundingClientRect();
+            menu.style.position = "fixed";
+            menu.style.top = `${rect.bottom + 4}px`;
+            menu.style.left = `${rect.right - 80}px`; // 横位置調整
+            menu.style.zIndex = 9999;
+            menu.classList.add("open");
+
+            // 外側クリックで閉じる
+            const closeMenu = (event) => {
+              if (!menu.contains(event.target) && event.target !== menuBtn) {
+                menu.classList.remove("open");
+                document.body.removeChild(menu);
+                li.appendChild(menu);
+                document.removeEventListener("click", closeMenu);
+              }
+            };
 
           setTimeout(() => document.addEventListener("click", closeMenu), 0);
           })
-        };
 
-        // 編集ボタン
-        li.querySelector(".edit-btn").onclick = (e) => {
+          // 編集ボタン
+          li.querySelector(".edit-btn").onclick = (e) => {
           e.stopPropagation();
-          editBook(book);
-          menu.classList.remove("open");
-          if (menu.parentNode === document.body) {
-            document.body.removeChild(menu);
-            li.appendChild(menu);
-          }
-        };
+            editBook(book);
+            menu.classList.remove("open");
+            if (menu.parentNode === document.body) {
+              document.body.removeChild(menu);
+              li.appendChild(menu);
+            }
+          };
 
-        // 削除ボタン
-        li.querySelector(".delete-btn").onclick = (e) => {
-          e.stopPropagation();
-          deleteBook(book.id);
-          menu.classList.remove("open");
+          // 削除ボタン
+          li.querySelector(".delete-btn").onclick = (e) => {
+          e.stopPropagation();  
+            deleteBook(book.id);
+            menu.classList.remove("open");
+            if (menu.parentNode === document.body) {
+              document.body.removeChild(menu);
+              li.appendChild(menu);
+            }
+          };
         };
-
         list.appendChild(li);
       });
     }
@@ -593,6 +596,7 @@
     // ログイン画面に戻る
     document.getElementById("backToLoginBtn").addEventListener("click", () => {
       uiState = "login";
+      document.getElementById("bookList").innerHTML = "";
       updateUI();
     });
 
@@ -609,7 +613,7 @@
       }
 
       updateUI();
-      if (uiState !== "login") {
+      if (uiState == "auth" || uiState == "guest") {
         await loadBooks();
       }
     });
