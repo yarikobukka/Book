@@ -23,7 +23,6 @@
 
   <div id="mainContent" style="display:none;">
     <button id="logoutBtn">ログアウト</button>
-    <button id="backToLoginBtn">ログイン</button>
 
     <h1>Book List</h1>
 
@@ -86,9 +85,8 @@
       const loginScreen = document.getElementById("loginScreen");
       const mainContent = document.getElementById("mainContent");
       const logoutBtn = document.getElementById("logoutBtn");
-      const backToLoginBtn = document.getElementById("backToLoginBtn");
 
-      if (!loginScreen || !mainContent || !logoutBtn || !backToLoginBtn) {
+      if (!loginScreen || !mainContent || !logoutBtn ) {
         console.error("UI要素が見つかりません");
         return;
       }
@@ -96,7 +94,6 @@
       loginScreen.style.display = "none";
       mainContent.style.display = "none";
       logoutBtn.style.display = "none";
-      backToLoginBtn.style.display = "none";
 
       if (uiState === "login") {
         loginScreen.style.display = "block";
@@ -580,13 +577,6 @@
       console.log("ログアウト成功");
       currentUser = null;
       uiState = "login";
-      updateUI();
-    });
-
-    // ログイン画面に戻る
-    document.getElementById("backToLoginBtn").addEventListener("click", () => {
-      uiState = "login";
-      document.getElementById("bookList").innerHTML = "";
       updateUI();
     });
 
