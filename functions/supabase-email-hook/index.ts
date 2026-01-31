@@ -1,6 +1,4 @@
 // supabase/functions/supabase-email-hook/index.ts
-import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
-
 function json(status: number, body: unknown) {
   return new Response(JSON.stringify(body), {
     status,
@@ -8,7 +6,7 @@ function json(status: number, body: unknown) {
   });
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   try {
     if (req.method !== "POST") {
       return json(405, { error: "Method Not Allowed" });
