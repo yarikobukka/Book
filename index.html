@@ -12,11 +12,16 @@
   <div id="loginScreen">
     <h2>Biblio Radarへようこそ!</h2>
 
-    <input type="email" id="loginEmail" placeholder="メールアドレス" required>
-    <input type="password" id="loginPassword" placeholder="パスワード" required>
-      
-    <button id="loginBtn">ログイン</button>
-    <button id="signupBtn">新規登録</button>
+    <form id="loginForm">
+      <div class="form-input">
+        <table class="form-table">
+          <tr><td><input type="email" id="loginEmail" placeholder="メールアドレス" required></td></tr>
+          <tr><td><input type="password" id="loginPassword" placeholder="パスワード" required></td></tr>
+        </table>
+        <button id="loginBtn">ログイン</button>
+        <button id="signupBtn">新規登録</button>
+      </div>
+    </form>
 
     <p id="loginMessage"></p>
   </div>
