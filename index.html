@@ -18,8 +18,8 @@
           <tr><td><input type="email" id="loginEmail" placeholder="メールアドレス" required></td></tr>
           <tr><td><input type="password" id="loginPassword" placeholder="パスワード" required></td></tr>
         </table>
-        <button id="loginBtn">ログイン</button>
-        <button id="signupBtn">新規登録</button>
+        <button type="button" id="loginBtn">ログイン</button>
+        <button type="button" id="signupBtn">新規登録</button>
       </div>
     </form>
 
@@ -509,8 +509,9 @@
 
     // ログイン
     document.getElementById("loginBtn").addEventListener("click", async () => {
-      const email = document.getElementById("loginEmail").value;
+      const email = document.getElementById("loginEmail").value.trim();
       const password = document.getElementById("loginPassword").value;
+      if (!email || !password){message.textContent = "メールアドレスとパシワードを入力してください。";return;};
       const message = document.getElementById("loginMessage");
 
       const { data, error } = await client.auth.signInWithPassword({

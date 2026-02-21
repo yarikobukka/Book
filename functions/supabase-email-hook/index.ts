@@ -19,7 +19,8 @@ Deno.serve(async (req) => {
       return json(500, { error: "Missing env: RESEND_API_KEY" });
     }
 
-    const payload = await req.json();
+    const payload = {email,password};console.log('signIn payload',payload);
+    const {data,error} = await client.auth.signInWithPassword(payload);
 
     /**
      * Supabase Auth Hookのpayloadは将来変わる可能性があるので
