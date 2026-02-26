@@ -39,6 +39,7 @@ h2 {
   width: 100px;
   padding: 8px 20px;
   margin: auto;
+  margin-top: 8px;
   font-weight: bold;
   border: 2px solid rgb(30, 56, 130);
   color: rgb(30, 56, 130);
@@ -50,6 +51,21 @@ h2 {
 .button:hover {
   color: #ffffff;
   background: rgb(30, 56, 130);
+}
+
+/* ===== パスワード表示・非表示切り替えボタン ===== */
+.passward-container {
+  position: relative;
+  margin: 0;
+  padding: 0;
+}
+
+.passwardview {
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
 }
 
 /* ===== コンテンツ ===== */
