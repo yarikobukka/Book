@@ -54,18 +54,31 @@ h2 {
 }
 
 /* ===== パスワード表示・非表示切り替えボタン ===== */
-.passward-container {
+.password-container {
   position: relative;
-  margin: 0;
-  padding: 0;
+  width: 100%;
 }
 
-.passwardview {
+.password-container input {
+  width: 100%;
+  box-sizing: border-box;
+  padding-right: 40px;
+}
+
+.password-toggle-btn {
   position: absolute;
-  margin: 0;
-  padding: 0;
-  border: none;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
   background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-size: 16px;
+  color: rgb(30, 56, 130);
+  height: 24px;
+  display: flex;
+  align-items: center;
 }
 
 /* ===== コンテンツ ===== */
