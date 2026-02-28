@@ -22,7 +22,7 @@
           <tr><td>
             <div class="password-container">
               <input type="password" id="loginPassword" placeholder="パスワード" class="input" required>
-              <button type="button" id="passwordview" onclick="passwordview()" class="password-toggle-btn">
+              <button type="button" id="passwordview" class="password-toggle-btn">
                 <i class="fa-solid fa-eye-slash"></i>
               </button>
             </div>
@@ -121,10 +121,9 @@
     }
 
     // パスワードの表示/非表示切替
-    window.passwordview = function passwordview() {
+    document.getElementById("passwordview").addEventListener("click", () => {
       const passwordInput = document.getElementById("loginPassword");
       const passwordViewBtn = document.getElementById("passwordview");
-      if (!passwordInput || !passwordViewBtn) return;
 
       if (passwordInput.type === "password") {
         passwordInput.type = "text";
@@ -133,7 +132,7 @@
         passwordInput.type = "password";
         passwordViewBtn.innerHTML = '<i class="fa-solid fa-eye-slash"></i>';
       }
-    }
+    });
 
     // ふりがなをひらがなに固定する
     function normalizeTyping(v) {
@@ -536,8 +535,8 @@
     document.getElementById("loginBtn").addEventListener("click", async () => {
       const email = document.getElementById("loginEmail").value.trim();
       const password = document.getElementById("loginPassword").value;
-      if (!email || !password){message.textContent = "メールアドレスとパシワードを入力してください。";return;};
       const message = document.getElementById("loginMessage");
+      if (!email || !password){message.textContent = "メールアドレスとパシワードを入力してください。";return;};
 
       const { data, error } = await client.auth.signInWithPassword({
         email,
@@ -624,9 +623,7 @@
       }
 
       updateUI();
-      if (uiState == "auth" || uiState == "guest") {
-        await loadBooks();
-      }
+      if (uiState == "auth") {await loadBooks();}
     });
 
     // 推薦API呼び出し
