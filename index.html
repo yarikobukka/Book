@@ -22,7 +22,7 @@
           <tr><td>
             <div class="password-container">
               <input type="password" id="loginPassword" placeholder="パスワード" class="input" required>
-              <button type="button" id="passwordview" class="password-toggle-btn">
+              <button type="button" id="loginpasswordview" class="password-toggle-btn">
                 <i class="fa-solid fa-eye-slash"></i>
               </button>
             </div>
@@ -38,6 +38,22 @@
 
   <div id="mainContent" style="display:none;">
     <button id="logoutBtn">ログアウト</button>
+      <form id="changePasswordForm">
+        <div class="password-container">
+          <input type="password" id="oldPassword" placeholder="現在のパスワード" class="input" required>
+          <button type="button" id="oldpasswordview" class="password-toggle-btn">
+            <i class="fa-solid fa-eye-slash"></i>
+          </button>
+        </div>
+        <div class="password-container">
+          <input type="password" id="newPassword" placeholder="新しいパスワード（8文字以上）" class="input" required minlength="8">
+          <button type="button" id="newpasswordview" class="password-toggle-btn">
+            <i class="fa-solid fa-eye-slash"></i>
+          </button>
+        </div>
+        <button type="submit" class="button">変更する</button>
+      </form>
+      <p id="changePasswordMessage"></p>
 
     <h1>Book List</h1>
 
@@ -121,16 +137,16 @@
     }
 
     // パスワードの表示/非表示切替
-    document.getElementById("passwordview").addEventListener("click", () => {
+    document.getElementById("loginpasswordview").addEventListener("click", () => {
       const passwordInput = document.getElementById("loginPassword");
-      const passwordViewBtn = document.getElementById("passwordview");
+      const loginpasswordViewBtn = document.getElementById("loginpasswordview");
 
       if (passwordInput.type === "password") {
         passwordInput.type = "text";
-        passwordViewBtn.innerHTML = '<i class="fa-solid fa-eye"></i>';
+        loginpasswordViewBtn.innerHTML = '<i class="fa-solid fa-eye"></i>';
       } else {
         passwordInput.type = "password";
-        passwordViewBtn.innerHTML = '<i class="fa-solid fa-eye-slash"></i>';
+        loginpasswordViewBtn.innerHTML = '<i class="fa-solid fa-eye-slash"></i>';
       }
     });
 
@@ -544,7 +560,7 @@
       });
 
       if (error) {
-        message.textContent = "ログイン失敗：" + error.message;
+        message.textContent = "ログインできませんでした。パスワードを忘れた場合は再登録してください。：" + error.message;
       } else {
         message.textContent = "ログイン成功！";
         uiState = "auth";
@@ -608,6 +624,77 @@
       currentUser = null;
       uiState = "login";
       updateUI();
+    });
+
+    // パスワード変更
+    document.getElementById("changePasswordForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const oldPassword = document.getElementById("oldPassword").value;
+      const newPassword = document.getElementById("newPassword").value;
+      const message = document.getElementById("changePasswordMessage");
+
+      if (!currentUser) {
+        message.textContent = "ログインしてください。";
+        return;
+      }
+
+      if (newPassword.length < 8) {
+        message.textContent = "新しいパスワードは8文字以上にしてください。";
+        return;
+      }
+
+      // 再認証
+      const { error: reauthError } = await client.auth.signInWithPassword({
+        email: currentUser.email,
+        password: oldPassword
+      });
+
+      if (reauthError) {
+        message.textContent = "現在のパスワードが正しくありません。";
+        return;
+      }
+
+      // パスワード更新
+      const { error: updateError } = await client.auth.updateUser({
+        password: newPassword
+      });
+
+      if (updateError) {
+        message.textContent = "変更に失敗しました：" + updateError.message;
+        return;
+      }
+
+      message.textContent = "パスワードを変更しました。";
+      e.target.reset();
+    });
+
+    // 新パスワードの表示/非表示切替
+    document.getElementById("newpasswordview").addEventListener("click", () => {
+      const passwordInput = document.getElementById("newPassword");
+      const newpasswordViewBtn = document.getElementById("newpasswordview");
+
+      if (passwordInput.type === "password") {
+        passwordInput.type = "text";
+        newpasswordViewBtn.innerHTML = '<i class="fa-solid fa-eye"></i>';
+      } else {
+        passwordInput.type = "password";
+        newpasswordViewBtn.innerHTML = '<i class="fa-solid fa-eye-slash"></i>';
+      }
+    });
+
+    // 旧パスワードの表示/非表示切替
+    document.getElementById("oldpasswordview").addEventListener("click", () => {
+      const passwordInput = document.getElementById("oldPassword");
+      const oldpasswordViewBtn = document.getElementById("oldpasswordview");
+
+      if (passwordInput.type === "password") {
+        passwordInput.type = "text";
+        oldpasswordViewBtn.innerHTML = '<i class="fa-solid fa-eye"></i>';
+      } else {
+        passwordInput.type = "password";
+        oldpasswordViewBtn.innerHTML = '<i class="fa-solid fa-eye-slash"></i>';
+      }
     });
 
     // 初期表示
