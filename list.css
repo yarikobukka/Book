@@ -89,6 +89,49 @@ h2 {
   width: 100%;
 }
 
+/* ===== ホームメニュー ===== */
+.home-menu-btn {
+  width: 40px;
+  height: 40px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: rgb(81, 86, 97);
+}
+
+.home-menu {
+  position: fixed;
+  animation: slideinLeft 0.5s forwards;
+  background: rgb(30, 56, 130);
+  border: 1px solid #ccc;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  z-index: 1000;
+  display: none;
+  color: #ffffff;
+  top: 0;
+  bottom: 0;
+  height: 100%;
+}
+
+@keyframes slideinLeft {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.menu-item{
+  color: #ffffff;
+  display: block;
+  padding: 8px 12px;
+  background: none;
+  border: none;
+  text-align: left;
+  cursor: pointer;
+}
+
 /* ===== 検索ボックス内ボタン ===== */
 .search-wrapper {
   margin-bottom: 16px;

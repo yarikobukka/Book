@@ -37,7 +37,11 @@
   </div>
 
   <div id="mainContent" style="display:none;">
-    <button id="logoutBtn">ログアウト</button>
+    <button id="homeMenuBtn" class="home-menu-btn">≡</button>
+    <div id="homeMenu" class="home-menu" style="display:none;">
+      <button id="logoutBtn" class="menu-item">ログアウト</button>
+      <button id="changePasswordBtn" class="menu-item">パスワード変更</button>
+    </div>
       <form id="changePasswordForm">
         <div class="password-container">
           <input type="password" id="oldPassword" placeholder="現在のパスワード" class="input" required>
@@ -256,7 +260,7 @@
           </div>
         `;
 
-        // メニュー開閉
+        // メニュー開閉(検索方法)
         if (currentUser) {
           const menuBtn = li.querySelector(".menu-btn");
           const menu = li.querySelector(".menu");
@@ -607,6 +611,23 @@
       updateUI();
       await loadBooks();
     };
+
+    // ホームメニュー
+    const homeMenuBtn = document.getElementById("homeMenuBtn");
+    const homeMenu = document.getElementById("homeMenu");
+
+    //　メニュー開閉（ホームメニュー）
+    homeMenuBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      homeMenu.style.display = homeMenu.style.display === "none" ? "block" : "none";
+    });
+
+    // ホームメニュー外クリックで閉じる
+    document.addEventListener("click", (e) => {
+      if (!homeMenu.contains(e.target) && e.target !== homeMenuBtn) {
+        homeMenu.style.display = "none";
+      }
+    });
 
     // ログアウト
     const logoutBtn = document.getElementById("logoutBtn");
