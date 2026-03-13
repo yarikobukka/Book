@@ -132,6 +132,15 @@ h2 {
   cursor: pointer;
 }
 
+.return-btn {
+  width: 40px;
+  height: 40px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: rgb(81, 86, 97);
+};
+
 /* ===== 検索ボックス内ボタン ===== */
 .search-wrapper {
   margin-bottom: 16px;

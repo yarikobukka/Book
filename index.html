@@ -42,22 +42,6 @@
       <button id="logoutBtn" class="menu-item">ログアウト</button>
       <button id="changePasswordBtn" class="menu-item">パスワード変更</button>
     </div>
-      <form id="changePasswordForm">
-        <div class="password-container">
-          <input type="password" id="oldPassword" placeholder="現在のパスワード" class="input" required>
-          <button type="button" id="oldpasswordview" class="password-toggle-btn">
-            <i class="fa-solid fa-eye-slash"></i>
-          </button>
-        </div>
-        <div class="password-container">
-          <input type="password" id="newPassword" placeholder="新しいパスワード（8文字以上）" class="input" required minlength="8">
-          <button type="button" id="newpasswordview" class="password-toggle-btn">
-            <i class="fa-solid fa-eye-slash"></i>
-          </button>
-        </div>
-        <button type="submit" class="button">変更する</button>
-      </form>
-      <p id="changePasswordMessage"></p>
 
     <h1>Book List</h1>
 
@@ -98,6 +82,27 @@
       <ul id="bookList"></ul>
       <p id="noResult" style="display:none;">該当する書籍が見つかりません</p>
     </div>
+  </div>
+
+  <div id="changePasswordSection" style="display:none;">
+    <button id="returnBtn" class="return-btn"><i class="fa-solid fa-angle-left"></i></button>
+    <h1>パスワード変更</h1>
+    <form id="changePasswordForm">
+      <div class="password-container">
+        <input type="password" id="oldPassword" placeholder="現在のパスワード" class="input" required>
+        <button type="button" id="oldpasswordview" class="password-toggle-btn">
+          <i class="fa-solid fa-eye-slash"></i>
+        </button>
+      </div>
+      <div class="password-container">
+        <input type="password" id="newPassword" placeholder="新しいパスワード（8文字以上）" class="input" required minlength="8">
+        <button type="button" id="newpasswordview" class="password-toggle-btn">
+          <i class="fa-solid fa-eye-slash"></i>
+        </button>
+      </div>
+      <button type="submit" class="button">変更する</button>
+    </form>
+    <p id="changePasswordMessage"></p>
   </div>
 
   <script>
@@ -645,6 +650,21 @@
       currentUser = null;
       uiState = "login";
       updateUI();
+    });
+
+    // 画面切り替え用関数
+    function showSection(sectionId) {
+      // すべてのセクションを非表示
+      document.getElementById("loginScreen").style.display = "none";
+      document.getElementById("mainContent").style.display = "none";
+      document.getElementById("changePasswordSection").style.display = "none";
+      // 指定セクションだけ表示
+      document.getElementById(sectionId).style.display = "block";
+    }
+
+    // パスワード変更ボタンで遷移
+    document.getElementById("changePasswordBtn").addEventListener("click", () => {
+      showSection("changePasswordSection");
     });
 
     // パスワード変更
