@@ -658,6 +658,7 @@
       document.getElementById("loginScreen").style.display = "none";
       document.getElementById("mainContent").style.display = "none";
       document.getElementById("changePasswordSection").style.display = "none";
+
       // 指定セクションだけ表示
       document.getElementById(sectionId).style.display = "block";
     }
@@ -736,6 +737,12 @@
         passwordInput.type = "password";
         oldpasswordViewBtn.innerHTML = '<i class="fa-solid fa-eye-slash"></i>';
       }
+    });
+
+    // 戻るボタンで遷移
+    document.getElementById("returnBtn").addEventListener("click", (e) => {
+      e.preventDefault(); // フォーム送信やページ遷移を防ぐ
+      showSection("mainContent");
     });
 
     // 初期表示
