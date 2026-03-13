@@ -84,22 +84,29 @@
     </div>
   </div>
 
-  <div id="changePasswordSection" class="form-input" style="display:none;">
+  <div id="changePasswordSection" class="change-password-section" style="display:none;">
     <button id="returnBtn" class="return-btn"><i class="fa-solid fa-angle-left"></i></button>
     <h1>パスワード変更</h1>
+    <p>パスワードは８文字以上にしてください。</p>
     <form id="changePasswordForm">
-      <div class="password-container">
-        <input type="password" id="oldPassword" placeholder="現在のパスワード" class="input" required>
-        <button type="button" id="oldpasswordview" class="password-toggle-btn">
-          <i class="fa-solid fa-eye-slash"></i>
-        </button>
-      </div>
-      <div class="password-container">
-        <input type="password" id="newPassword" placeholder="新しいパスワード（8文字以上）" class="input" required minlength="8">
-        <button type="button" id="newpasswordview" class="password-toggle-btn">
-          <i class="fa-solid fa-eye-slash"></i>
-        </button>
-      </div>
+      <table class="form-table">
+        <tr><td>
+          <div class="password-container">
+            <input type="password" id="oldPassword" placeholder="現在のパスワード" class="input" required>
+            <button type="button" id="oldpasswordview" class="password-toggle-btn">
+              <i class="fa-solid fa-eye-slash"></i>
+            </button>
+          </div>
+        </td></tr>
+        <tr><td>
+          <div class="password-container">
+            <input type="password" id="newPassword" placeholder="新しいパスワード（8文字以上）" class="input" required minlength="8">
+            <button type="button" id="newpasswordview" class="password-toggle-btn">
+              <i class="fa-solid fa-eye-slash"></i>
+            </button>
+          </div>
+        </td></tr>
+      </table>
       <button type="submit" class="button">変更する</button>
     </form>
     <p id="changePasswordMessage"></p>
