@@ -36,12 +36,17 @@
     <p id="loginMessage"></p>
   </div>
 
+  <!-- メニューボタン-->
+
   <div id="mainContent" style="display:none;">
     <button id="homeMenuBtn" class="home-menu-btn">≡</button>
     <div id="homeMenu" class="home-menu" style="display:none;">
       <button id="logoutBtn" class="menu-item">ログアウト</button>
       <button id="changePasswordBtn" class="menu-item">パスワード変更</button>
+      <button id="appearanceBtn" class="menu-item">表示設定</button>
     </div>
+
+    <!-- メイン画面-->
 
     <h1>Book List</h1>
 
@@ -58,8 +63,12 @@
     </form>
 
     <div class="content">
+
       <div id="result"></div>
+
       <h2>登録済みの書籍</h2>
+
+      <!-- 検索ボックス -->
       <div class="search-wrapper">
         <div class="search-box-container">
           <input type="text" id="searchBox" placeholder="検索" class="input"/>
@@ -79,13 +88,16 @@
           <option value="reading">タイトル順</option>
         </select>
       </div>
+
       <ul id="bookList"></ul>
       <p id="noResult" style="display:none;">該当する書籍が見つかりません</p>
+
     </div>
   </div>
 
+  <!-- パスワード変更セクション -->
   <div id="changePasswordSection" class="change-password-section" style="display:none;">
-    <button id="returnBtn" class="return-btn"><i class="fa-solid fa-angle-left"></i></button>
+    <button class="return-btn"><i class="fa-solid fa-angle-left"></i></button>
     <h1>パスワード変更</h1>
     <p>パスワードは８文字以上にしてください。</p>
     <form id="changePasswordForm">
@@ -110,6 +122,22 @@
       <button type="submit" class="button">変更する</button>
     </form>
     <p id="changePasswordMessage"></p>
+  </div>
+
+  <!-- 表示設定セクション -->
+  <div id="appearanceSection" class="appearance-section" style="display:none;">
+    <button class="return-btn"><i class="fa-solid fa-angle-left"></i></button>
+    <h1>表示設定</h1>
+    <h2>カラー設定</h2>
+    <div class="color-settings">
+      <label for="themeColor">テーマ色</label>
+      <input type="color" id="themeColor" class="color-input">
+      <label for="cardColor">カード色</label>
+      <input type="color" id="cardColor" class="color-input">
+      <label for="textColor">文字色</label>
+      <input type="color" id="textColor" class="color-input">
+    </div>
+    <p>ここで表示設定を変更できます。</p>
   </div>
 
   <script>
@@ -164,6 +192,36 @@
         passwordInput.type = "password";
         loginpasswordViewBtn.innerHTML = '<i class="fa-solid fa-eye-slash"></i>';
       }
+    });
+
+    // 表示設定ボタンで表示変更画面に遷移
+    document.getElementById("appearanceBtn").addEventListener("click", () => {
+      showSection("appearanceSection");
+    });
+
+    // 背景色・文字色のinput要素を取得
+    const backgroundColorInput = document.getElementById("backgroundColor");
+    const themeColorInput = document.getElementById("themeColor");
+    const cardColorInput = document.getElementById("cardColor");
+    const textColorInput = document.getElementById("textColor");
+
+    // テーマ色変更
+    themeColorInput.addEventListener("input", () => {
+      document.body.style.setProperty("--theme-color", themeColorInput.value);
+    });
+
+    // カード色変更
+    cardColorInput.addEventListener("input", () => {
+      document.body.style.setProperty("--card-color", cardColorInput.value);
+    });
+
+    // 文字色変更
+    textColorInput.addEventListener("input", () => {
+      document.body.style.color = textColorInput.value;
+      // 必要に応じて他の要素にも反映
+      document.querySelectorAll("p, label, .input, .menu-item, select").forEach(el => {
+        el.style.color = textColorInput.value;
+      });
     });
 
     // ふりがなをひらがなに固定する
@@ -665,6 +723,7 @@
       document.getElementById("loginScreen").style.display = "none";
       document.getElementById("mainContent").style.display = "none";
       document.getElementById("changePasswordSection").style.display = "none";
+      document.getElementById("appearanceSection").style.display = "none";
 
       // 指定セクションだけ表示
       document.getElementById(sectionId).style.display = "block";
@@ -747,9 +806,11 @@
     });
 
     // 戻るボタンで遷移
-    document.getElementById("returnBtn").addEventListener("click", (e) => {
-      e.preventDefault(); // フォーム送信やページ遷移を防ぐ
-      showSection("mainContent");
+    Array.from(document.getElementsByClassName("return-btn")).forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault(); // フォーム送信やページ遷移を防ぐ
+        showSection("mainContent");
+      });
     });
 
     // 初期表示

@@ -1,4 +1,10 @@
 /* ===== 全体 ===== */
+:root {
+  --theme-color: rgb(30, 56, 130);
+  --card-color: #d4eef1;
+  --text-color: #000000;
+}
+
 body {
   margin: 0;
   padding: 0;
@@ -6,13 +12,13 @@ body {
 
 h1 {
   text-align: center;
-  color: rgb(30, 56, 130);
+  color: var(--theme-color);
   margin: 40px 0;
 }
 
 h2 {
   text-align: center;
-  color: rgb(30, 56, 130);
+  color: var(--theme-color);
   margin: 40px 0 20px 0;
 }
 
@@ -46,8 +52,8 @@ p {
   margin: auto;
   margin-top: 8px;
   font-weight: bold;
-  border: 2px solid rgb(30, 56, 130);
-  color: rgb(30, 56, 130);
+  border: 2px solid var(--theme-color);
+  color: var(--theme-color);
   background-color: #ffffff;
   border-radius: 100vh;
   transition: 0.5s;
@@ -55,7 +61,7 @@ p {
 }
 .button:hover {
   color: #ffffff;
-  background: rgb(30, 56, 130);
+  background: var(--theme-color);
 }
 
 /* ===== パスワード表示・非表示切り替えボタン ===== */
@@ -80,7 +86,7 @@ p {
   padding: 0;
   cursor: pointer;
   font-size: 16px;
-  color: rgb(30, 56, 130);
+  color: var(--theme-color);
   height: 24px;
   display: flex;
   align-items: center;
@@ -107,7 +113,7 @@ p {
 .home-menu {
   position: fixed;
   animation: slideinLeft 0.5s forwards;
-  background: rgb(30, 56, 130);
+  background: var(--theme-color);
   border: 1px solid #ccc;
   box-shadow: 0 2px 6px rgba(0,0,0,0.2);
   z-index: 1000;
@@ -128,7 +134,7 @@ p {
 }
 
 .menu-item{
-  color: #ffffff;
+  color: #ffffff !important;
   display: block;
   padding: 8px 12px;
   background: none;
@@ -144,7 +150,7 @@ p {
   border: none;
   font-size: 24px;
   color: rgb(81, 86, 97);
-};
+}
 
 .change-password-section {
   display: flex;
@@ -238,7 +244,7 @@ p {
 
 /* ===== カード ===== */
 .card {
-  background-color: #d4eef1;
+  background-color: var(--card-color);
   margin: 8px auto;
   border-radius: 8px;
   padding: 10px 40px 10px 10px;
@@ -335,7 +341,7 @@ select {
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
-  background-color: white;
+  color: var(--text-color);
   border: 1px solid #ccc;
   border-radius: 8px;
   height: 36px;
@@ -344,7 +350,7 @@ select {
   cursor: pointer;
   padding-left: 8px;
   padding-right: 30px;
-  border: 0;
+  border: none;
 }
 .chevron-icon {
   display: inline-block;
