@@ -208,7 +208,6 @@
     //　色変更
     document.addEventListener("DOMContentLoaded", async () => {
       // 要素取得
-      const backgroundColorInput = document.getElementById("backgroundColor");
       const themeColorInput = document.getElementById("themeColor");
       const cardColorInput = document.getElementById("cardColor");
       const textColorInput = document.getElementById("textColor");
@@ -231,7 +230,7 @@
 
       // DBから設定を読み込む（ログイン済み前提）
       try {
-        const { data: user, error: userErr } = await supabase.auth.getUser();
+        const { data: user, error: userErr } = await client.auth.getUser();
         if (userErr) throw userErr;
         const currentUser = user?.data?.user;
         if (!currentUser) {
@@ -261,11 +260,6 @@
           const card = data.card_color || getComputedStyle(document.body).getPropertyValue("--card-color") || '';
           const text = data.text_color || getComputedStyle(document.body).getPropertyValue("--text-color") || '';
 
-          if (bg) {
-            document.body.style.setProperty("--background-color", bg);
-            localStorage.setItem("backgroundColor", bg);
-            if (backgroundColorInput) backgroundColorInput.value = bg;
-          }
           if (theme) {
             const t = rgbToHex(theme.trim());
             document.body.style.setProperty("--theme-color", t);
@@ -292,7 +286,6 @@
           const savedTheme = localStorage.getItem("themeColor");
           const savedCard = localStorage.getItem("cardColor");
           const savedText = localStorage.getItem("textColor");
-          const savedBg = localStorage.getItem("backgroundColor");
 
           if (savedTheme) {
             document.body.style.setProperty("--theme-color", savedTheme);
@@ -309,21 +302,16 @@
               el.style.color = savedText;
             });
           }
-          if (savedBg) {
-            document.body.style.setProperty("--background-color", savedBg);
-            if (backgroundColorInput) backgroundColorInput.value = savedBg;
-          }
 
           // DBにupsert（保存）
           const toSave = {
             user_id: userId,
-            background_color: savedBg || null,
             theme_color: savedTheme || null,
             card_color: savedCard || null,
             text_color: savedText || null,
             preferences: {}
           };
-          if (toSave.background_color || toSave.theme_color || toSave.card_color || toSave.text_color) {
+          if (toSave.theme_color || toSave.card_color || toSave.text_color) {
             await upsertSettings(toSave);
           }
         }
@@ -340,22 +328,18 @@
         const themeColor = getComputedStyle(document.body).getPropertyValue("--theme-color");
         const cardColor = getComputedStyle(document.body).getPropertyValue("--card-color");
         const textColor = getComputedStyle(document.body).getPropertyValue("--text-color");
-        const bgColor = getComputedStyle(document.body).getPropertyValue("--background-color");
 
         const savedTheme = localStorage.getItem("themeColor") || rgbToHex(themeColor);
         const savedCard = localStorage.getItem("cardColor") || rgbToHex(cardColor);
         const savedText = localStorage.getItem("textColor") || rgbToHex(textColor);
-        const savedBg = localStorage.getItem("backgroundColor") || rgbToHex(bgColor);
 
         if (themeColorInput) themeColorInput.value = savedTheme;
         if (cardColorInput) cardColorInput.value = savedCard;
         if (textColorInput) textColorInput.value = savedText;
-        if (backgroundColorInput) backgroundColorInput.value = savedBg;
 
         document.body.style.setProperty("--theme-color", savedTheme);
         document.body.style.setProperty("--card-color", savedCard);
         document.body.style.setProperty("--text-color", savedText);
-        document.body.style.setProperty("--background-color", savedBg);
         document.querySelectorAll("p, label, .input, .menu-item, select").forEach(el => {
           el.style.color = savedText;
         });
@@ -393,15 +377,6 @@
             await saveCurrentSettingsDebounced();
           });
         }
-        if (backgroundColorInput) {
-          backgroundColorInput.addEventListener("input", async () => {
-            const val = backgroundColorInput.value;
-            if (!isValidHex(val)) return;
-            document.body.style.setProperty("--background-color", val);
-            localStorage.setItem("backgroundColor", val);
-            await saveCurrentSettingsDebounced();
-          });
-        }
       }
 
       // Debounce保存（短時間の連打を防ぐ）
@@ -423,13 +398,12 @@
 
           const toSave = {
             user_id: currentUser.id,
-            background_color: localStorage.getItem("backgroundColor") || null,
             theme_color: localStorage.getItem("themeColor") || null,
             card_color: localStorage.getItem("cardColor") || null,
             text_color: localStorage.getItem("textColor") || null,
             preferences: {}
           };
-          if (!toSave.background_color && !toSave.theme_color && !toSave.card_color && !toSave.text_color) return;
+          if (!toSave.theme_color && !toSave.card_color && !toSave.text_color) return;
           await upsertSettings(toSave);
         } catch (err) {
           console.error('saveCurrentSettings error', err);
