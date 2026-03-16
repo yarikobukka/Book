@@ -25,6 +25,7 @@ h2 {
 p {
   text-align: center;
   margin: 20px 0;
+  color: var(--text-color)
 }
 
 /* ===== フォーム ===== */
@@ -291,12 +292,14 @@ p {
   white-space: nowrap;
   flex-grow: 1;
   width: fit-content;
+  color: var(--text-color);
 }
 .author {
   text-align: right;
   width: fit-content;
   margin-left: auto;
   white-space: nowrap;
+  color: var(--text-color);
 }
 
 .date {
@@ -373,4 +376,5 @@ select {
   border-bottom: none;
   transform: rotate(135deg) translateY(4px); margin-top: 2px;
   pointer-events: none;
+  color: var(--text-color);
 }
