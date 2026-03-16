@@ -159,6 +159,18 @@ p {
   width: 100%;
 }
 
+.color-settings {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.color-settings label {
+  margin-right: 24px;
+  font-size: 16px;
+}
+
 /* ===== 検索ボックス内ボタン ===== */
 .search-wrapper {
   margin-bottom: 16px;

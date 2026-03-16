@@ -129,14 +129,20 @@
     <button class="return-btn"><i class="fa-solid fa-angle-left"></i></button>
     <h1>表示設定</h1>
     <h2>カラー設定</h2>
-    <div class="color-settings">
-      <label for="themeColor">テーマ色</label>
-      <input type="color" id="themeColor" class="color-input">
-      <label for="cardColor">カード色</label>
-      <input type="color" id="cardColor" class="color-input">
-      <label for="textColor">文字色</label>
-      <input type="color" id="textColor" class="color-input">
-    </div>
+    <table class="color-settings">
+      <tr>
+        <td><label for="themeColor">テーマ色</label></td>
+        <td><input type="color" id="themeColor" class="color-input"></td>
+      </tr>
+      <tr>
+        <td><label for="cardColor">カード色</label></td>
+        <td><input type="color" id="cardColor" class="color-input"></td>
+      </tr>
+      <tr>
+        <td><label for="textColor">文字色</label></td>
+        <td><input type="color" id="textColor" class="color-input"></td>
+      </tr>
+    </table>
     <p>ここで表示設定を変更できます。</p>
   </div>
 
@@ -199,29 +205,250 @@
       showSection("appearanceSection");
     });
 
-    // 背景色・文字色のinput要素を取得
-    const backgroundColorInput = document.getElementById("backgroundColor");
-    const themeColorInput = document.getElementById("themeColor");
-    const cardColorInput = document.getElementById("cardColor");
-    const textColorInput = document.getElementById("textColor");
+    //　色変更
+    document.addEventListener("DOMContentLoaded", async () => {
+      // 要素取得
+      const backgroundColorInput = document.getElementById("backgroundColor");
+      const themeColorInput = document.getElementById("themeColor");
+      const cardColorInput = document.getElementById("cardColor");
+      const textColorInput = document.getElementById("textColor");
 
-    // テーマ色変更
-    themeColorInput.addEventListener("input", () => {
-      document.body.style.setProperty("--theme-color", themeColorInput.value);
-    });
+      // ヘルパー
+      const rgbToHex = (rgb) => {
+        if (!rgb) return "#000000";
+        if (rgb.startsWith("#")) return rgb;
+        const result = rgb.match(/\d+/g);
+        if (!result) return "#000000";
+        return (
+          "#" +
+          result
+            .slice(0, 3)
+            .map(x => ("0" + parseInt(x).toString(16)).slice(-2))
+            .join("")
+        );
+      };
+      const isValidHex = (hex) => /^#([0-9A-Fa-f]{6})$/.test(hex);
 
-    // カード色変更
-    cardColorInput.addEventListener("input", () => {
-      document.body.style.setProperty("--card-color", cardColorInput.value);
-    });
+      // DBから設定を読み込む（ログイン済み前提）
+      try {
+        const { data: user, error: userErr } = await supabase.auth.getUser();
+        if (userErr) throw userErr;
+        const currentUser = user?.data?.user;
+        if (!currentUser) {
+          // 未ログイン時はlocalStorageのみ利用
+          applyLocalOrCss();
+          bindInputs();
+          return;
+        }
 
-    // 文字色変更
-    textColorInput.addEventListener("input", () => {
-      document.body.style.color = textColorInput.value;
-      // 必要に応じて他の要素にも反映
-      document.querySelectorAll("p, label, .input, .menu-item, select").forEach(el => {
-        el.style.color = textColorInput.value;
-      });
+        const userId = currentUser.id;
+
+        // DBから設定取得
+        const { data, error } = await supabase
+          .from('Settings')
+          .select('*')
+          .eq('user_id', userId)
+          .single();
+
+        if (error && error.code !== 'PGRST116') {
+          console.error('Settings fetch error', error);
+        }
+
+        if (data) {
+          // DB値を適用
+          const bg = data.background_color || getComputedStyle(document.body).getPropertyValue("--background-color") || '';
+          const theme = data.theme_color || getComputedStyle(document.body).getPropertyValue("--theme-color") || '';
+          const card = data.card_color || getComputedStyle(document.body).getPropertyValue("--card-color") || '';
+          const text = data.text_color || getComputedStyle(document.body).getPropertyValue("--text-color") || '';
+
+          if (bg) {
+            document.body.style.setProperty("--background-color", bg);
+            localStorage.setItem("backgroundColor", bg);
+            if (backgroundColorInput) backgroundColorInput.value = bg;
+          }
+          if (theme) {
+            const t = rgbToHex(theme.trim());
+            document.body.style.setProperty("--theme-color", t);
+            localStorage.setItem("themeColor", t);
+            if (themeColorInput) themeColorInput.value = t;
+          }
+          if (card) {
+            const c = rgbToHex(card.trim());
+            document.body.style.setProperty("--card-color", c);
+            localStorage.setItem("cardColor", c);
+            if (cardColorInput) cardColorInput.value = c;
+          }
+          if (text) {
+            const tx = rgbToHex(text.trim());
+            document.body.style.setProperty("--text-color", tx);
+            localStorage.setItem("textColor", tx);
+            if (textColorInput) textColorInput.value = tx;
+            document.querySelectorAll("p, label, .input, .menu-item, select").forEach(el => {
+              el.style.color = tx;
+            });
+          }
+        } else {
+          // DBに設定がない場合はlocalStorage→DB保存
+          const savedTheme = localStorage.getItem("themeColor");
+          const savedCard = localStorage.getItem("cardColor");
+          const savedText = localStorage.getItem("textColor");
+          const savedBg = localStorage.getItem("backgroundColor");
+
+          if (savedTheme) {
+            document.body.style.setProperty("--theme-color", savedTheme);
+            if (themeColorInput) themeColorInput.value = savedTheme;
+          }
+          if (savedCard) {
+            document.body.style.setProperty("--card-color", savedCard);
+            if (cardColorInput) cardColorInput.value = savedCard;
+          }
+          if (savedText) {
+            document.body.style.setProperty("--text-color", savedText);
+            if (textColorInput) textColorInput.value = savedText;
+            document.querySelectorAll("p, label, .input, .menu-item, select").forEach(el => {
+              el.style.color = savedText;
+            });
+          }
+          if (savedBg) {
+            document.body.style.setProperty("--background-color", savedBg);
+            if (backgroundColorInput) backgroundColorInput.value = savedBg;
+          }
+
+          // DBにupsert（保存）
+          const toSave = {
+            user_id: userId,
+            background_color: savedBg || null,
+            theme_color: savedTheme || null,
+            card_color: savedCard || null,
+            text_color: savedText || null,
+            preferences: {}
+          };
+          if (toSave.background_color || toSave.theme_color || toSave.card_color || toSave.text_color) {
+            await upsertSettings(toSave);
+          }
+        }
+      } catch (err) {
+        console.error('Error during settings sync', err);
+        applyLocalOrCss();
+      }
+
+      // 入力イベントバインド
+      bindInputs();
+
+      // localStorageを適用して入力へ反映
+      function applyLocalOrCss() {
+        const themeColor = getComputedStyle(document.body).getPropertyValue("--theme-color");
+        const cardColor = getComputedStyle(document.body).getPropertyValue("--card-color");
+        const textColor = getComputedStyle(document.body).getPropertyValue("--text-color");
+        const bgColor = getComputedStyle(document.body).getPropertyValue("--background-color");
+
+        const savedTheme = localStorage.getItem("themeColor") || rgbToHex(themeColor);
+        const savedCard = localStorage.getItem("cardColor") || rgbToHex(cardColor);
+        const savedText = localStorage.getItem("textColor") || rgbToHex(textColor);
+        const savedBg = localStorage.getItem("backgroundColor") || rgbToHex(bgColor);
+
+        if (themeColorInput) themeColorInput.value = savedTheme;
+        if (cardColorInput) cardColorInput.value = savedCard;
+        if (textColorInput) textColorInput.value = savedText;
+        if (backgroundColorInput) backgroundColorInput.value = savedBg;
+
+        document.body.style.setProperty("--theme-color", savedTheme);
+        document.body.style.setProperty("--card-color", savedCard);
+        document.body.style.setProperty("--text-color", savedText);
+        document.body.style.setProperty("--background-color", savedBg);
+        document.querySelectorAll("p, label, .input, .menu-item, select").forEach(el => {
+          el.style.color = savedText;
+        });
+      }
+
+      // 入力イベントバインド関数
+      function bindInputs() {
+        if (themeColorInput) {
+          themeColorInput.addEventListener("input", async () => {
+            const val = themeColorInput.value;
+            if (!isValidHex(val)) return;
+            document.body.style.setProperty("--theme-color", val);
+            localStorage.setItem("themeColor", val);
+            await saveCurrentSettingsDebounced();
+          });
+        }
+        if (cardColorInput) {
+          cardColorInput.addEventListener("input", async () => {
+            const val = cardColorInput.value;
+            if (!isValidHex(val)) return;
+            document.body.style.setProperty("--card-color", val);
+            localStorage.setItem("cardColor", val);
+            await saveCurrentSettingsDebounced();
+          });
+        }
+        if (textColorInput) {
+          textColorInput.addEventListener("input", async () => {
+            const val = textColorInput.value;
+            if (!isValidHex(val)) return;
+            document.body.style.setProperty("--text-color", val);
+            localStorage.setItem("textColor", val);
+            document.querySelectorAll("p, label, .input, .menu-item, select").forEach(el => {
+              el.style.color = val;
+            });
+            await saveCurrentSettingsDebounced();
+          });
+        }
+        if (backgroundColorInput) {
+          backgroundColorInput.addEventListener("input", async () => {
+            const val = backgroundColorInput.value;
+            if (!isValidHex(val)) return;
+            document.body.style.setProperty("--background-color", val);
+            localStorage.setItem("backgroundColor", val);
+            await saveCurrentSettingsDebounced();
+          });
+        }
+      }
+
+      // Debounce保存（短時間の連打を防ぐ）
+      let saveTimeout = null;
+      async function saveCurrentSettingsDebounced() {
+        if (saveTimeout) clearTimeout(saveTimeout);
+        saveTimeout = setTimeout(async () => {
+          await saveCurrentSettings();
+        }, 600);
+      }
+
+      // 現在のCSS/localStorageをDBに保存（upsert）
+      async function saveCurrentSettings() {
+        try {
+          const { data: user, error: userErr } = await supabase.auth.getUser();
+          if (userErr) throw userErr;
+          const currentUser = user?.data?.user;
+          if (!currentUser) return;
+
+          const toSave = {
+            user_id: currentUser.id,
+            background_color: localStorage.getItem("backgroundColor") || null,
+            theme_color: localStorage.getItem("themeColor") || null,
+            card_color: localStorage.getItem("cardColor") || null,
+            text_color: localStorage.getItem("textColor") || null,
+            preferences: {}
+          };
+          if (!toSave.background_color && !toSave.theme_color && !toSave.card_color && !toSave.text_color) return;
+          await upsertSettings(toSave);
+        } catch (err) {
+          console.error('saveCurrentSettings error', err);
+        }
+      }
+
+      // upsert実装：INSERT ... ON CONFLICT (user_id) DO UPDATE
+      async function upsertSettings(payload) {
+        try {
+          const { error } = await supabase
+            .from('Settings')
+            .upsert(payload, { onConflict: 'user_id' });
+          if (error) {
+            console.error('upsertSettings error', error);
+          }
+        } catch (err) {
+          console.error('upsertSettings exception', err);
+        }
+      }
     });
 
     // ふりがなをひらがなに固定する
