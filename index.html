@@ -206,6 +206,8 @@
     });
 
     //　色変更
+    let saveTimeout = null;
+
     document.addEventListener("DOMContentLoaded", async () => {
       // 要素取得
       const themeColorInput = document.getElementById("themeColor");
@@ -243,7 +245,7 @@
         const userId = currentUser.id;
 
         // DBから設定取得
-        const { data, error } = await supabase
+        const { data, error } = await client
           .from('Settings')
           .select('*')
           .eq('user_id', userId)
@@ -380,7 +382,6 @@
       }
 
       // Debounce保存（短時間の連打を防ぐ）
-      let saveTimeout = null;
       async function saveCurrentSettingsDebounced() {
         if (saveTimeout) clearTimeout(saveTimeout);
         saveTimeout = setTimeout(async () => {
@@ -391,7 +392,7 @@
       // 現在のCSS/localStorageをDBに保存（upsert）
       async function saveCurrentSettings() {
         try {
-          const { data: user, error: userErr } = await supabase.auth.getUser();
+          const { data: user, error: userErr } = await client.auth.getUser();
           if (userErr) throw userErr;
           const currentUser = user?.data?.user;
           if (!currentUser) return;
@@ -413,7 +414,7 @@
       // upsert実装：INSERT ... ON CONFLICT (user_id) DO UPDATE
       async function upsertSettings(payload) {
         try {
-          const { error } = await supabase
+          const { error } = await client
             .from('Settings')
             .upsert(payload, { onConflict: 'user_id' });
           if (error) {
@@ -542,12 +543,13 @@
             // 他のメニューを閉じる
             document.querySelectorAll(".menu.open").forEach(m => {
             m.classList.remove("open");
+            const parentCard = m.closest(".card");
+            if (parentCard) parentCard.appendChild(m);
             });
 
             // すでに開いていたら閉じる
             if (menu.classList.contains("open")) {
               menu.classList.remove("open");
-              document.body.removeChild(menu);
               li.appendChild(menu);
               return;
             }
@@ -565,7 +567,6 @@
             const closeMenu = (event) => {
               if (!menu.contains(event.target) && event.target !== menuBtn) {
                 menu.classList.remove("open");
-                document.body.removeChild(menu);
                 li.appendChild(menu);
                 document.removeEventListener("click", closeMenu);
               }
@@ -579,10 +580,7 @@
           e.stopPropagation();
             editBook(book);
             menu.classList.remove("open");
-            if (menu.parentNode === document.body) {
-              document.body.removeChild(menu);
-              li.appendChild(menu);
-            }
+            li.appendChild(menu);
           };
 
           // 削除ボタン
@@ -590,10 +588,7 @@
           e.stopPropagation();  
             deleteBook(book.id);
             menu.classList.remove("open");
-            if (menu.parentNode === document.body) {
-              document.body.removeChild(menu);
-              li.appendChild(menu);
-            }
+            li.appendChild(menu);
           };
         };
         list.appendChild(li);
