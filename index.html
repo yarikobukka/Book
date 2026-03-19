@@ -143,6 +143,8 @@
         <td><input type="color" id="textColor" class="color-input"></td>
       </tr>
     </table>
+    <button type="button" id="saveAppearanceBtn" class="button">保存</button>
+    <p id="appearanceMessage" class="appearance-message"></p>
     <p>ここで表示設定を変更できます。</p>
   </div>
 
@@ -157,9 +159,204 @@
 
     let uiState = "login"; // "login" | "auth"
     let currentUser = null;
+    const BOOKS_TABLE = "books";
+    const SETTINGS_TABLE_CANDIDATES = ["Settings", "settings"];
+    const SECTION_IDS = [
+      "loginScreen",
+      "mainContent",
+      "changePasswordSection",
+      "appearanceSection"
+    ];
 
     function getBooksTable() {
-      return "books";
+      return BOOKS_TABLE;
+    }
+
+    function getSettingsTableCandidates() {
+      return SETTINGS_TABLE_CANDIDATES;
+    }
+
+    function isNetworkFetchError(error) {
+      return error instanceof TypeError && error.message === "Failed to fetch";
+    }
+
+    function getSupabaseHint(error) {
+      if (isNetworkFetchError(error)) {
+        if (location.protocol === "file:") {
+          return "HTMLファイルを直接開いている可能性があります。Live Server などで http://localhost から開いてください。";
+        }
+        if (navigator.onLine === false) {
+          return "オフラインのため Supabase に接続できません。";
+        }
+        return "Supabase への通信に失敗しました。URL・anon key・ネット接続・ブラウザ拡張のブロックを確認してください。";
+      }
+
+      if (error?.code === "42P01" || error?.code === "PGRST205") {
+        return "テーブル名が一致していない可能性があります。Supabase 側で Settings または settings を確認してください。";
+      }
+
+      return error?.message || "不明なエラーが発生しました。";
+    }
+
+    function isMissingRelationError(error) {
+      return error?.code === "42P01" || error?.code === "PGRST205";
+    }
+
+    function rgbToHex(rgb) {
+      if (!rgb) return "#000000";
+      if (rgb.startsWith("#")) return rgb;
+      const result = rgb.match(/\d+/g);
+      if (!result) return "#000000";
+      return (
+        "#" +
+        result
+          .slice(0, 3)
+          .map(x => ("0" + parseInt(x, 10).toString(16)).slice(-2))
+          .join("")
+      );
+    }
+
+    function isValidHex(hex) {
+      return /^#([0-9A-Fa-f]{6})$/.test(hex);
+    }
+
+    function updateTextColorElements(color) {
+      document.querySelectorAll("p, label, .input, .menu-item, select").forEach(el => {
+        el.style.color = color;
+      });
+    }
+
+    function applyAppearanceSettings({ themeColor, cardColor, textColor }) {
+      if (themeColor) {
+        document.body.style.setProperty("--theme-color", themeColor);
+        localStorage.setItem("themeColor", themeColor);
+      }
+
+      if (cardColor) {
+        document.body.style.setProperty("--card-color", cardColor);
+        localStorage.setItem("cardColor", cardColor);
+      }
+
+      if (textColor) {
+        document.body.style.setProperty("--text-color", textColor);
+        localStorage.setItem("textColor", textColor);
+        updateTextColorElements(textColor);
+      }
+    }
+
+    function getAppearanceFromStorageOrCss() {
+      const styles = getComputedStyle(document.body);
+      return {
+        themeColor: localStorage.getItem("themeColor") || rgbToHex(styles.getPropertyValue("--theme-color")),
+        cardColor: localStorage.getItem("cardColor") || rgbToHex(styles.getPropertyValue("--card-color")),
+        textColor: localStorage.getItem("textColor") || rgbToHex(styles.getPropertyValue("--text-color"))
+      };
+    }
+
+    function syncAppearanceInputs(inputs, colors) {
+      if (inputs.theme) inputs.theme.value = colors.themeColor;
+      if (inputs.card) inputs.card.value = colors.cardColor;
+      if (inputs.text) inputs.text.value = colors.textColor;
+    }
+
+    function buildSettingsPayload(userId) {
+      return {
+        user_id: userId,
+        theme_color: localStorage.getItem("themeColor") || null,
+        card_color: localStorage.getItem("cardColor") || null,
+        text_color: localStorage.getItem("textColor") || null,
+        preferences: {}
+      };
+    }
+
+    function togglePasswordVisibility(inputId, buttonId) {
+      const passwordInput = document.getElementById(inputId);
+      const toggleButton = document.getElementById(buttonId);
+
+      if (!passwordInput || !toggleButton) return;
+
+      const isPassword = passwordInput.type === "password";
+      passwordInput.type = isPassword ? "text" : "password";
+      toggleButton.innerHTML = isPassword
+        ? '<i class="fa-solid fa-eye"></i>'
+        : '<i class="fa-solid fa-eye-slash"></i>';
+    }
+
+    async function getActiveUser() {
+      if (currentUser) {
+        return currentUser;
+      }
+
+      const { data, error } = await client.auth.getSession();
+      if (error) {
+        throw error;
+      }
+
+      currentUser = data?.session?.user || null;
+      return currentUser;
+    }
+
+    async function fetchSettingsByUserId(userId) {
+      let lastError = null;
+
+      for (const tableName of getSettingsTableCandidates()) {
+        try {
+          const { data, error } = await client
+            .from(tableName)
+            .select("*")
+            .eq("user_id", userId)
+            .maybeSingle();
+
+          if (!error) {
+            return { data, tableName };
+          }
+
+          if (error.code === "PGRST116") {
+            return { data: null, tableName };
+          }
+
+          if (!isMissingRelationError(error)) {
+            return { data: null, tableName, error };
+          }
+
+          lastError = error;
+        } catch (err) {
+          throw err;
+        }
+      }
+
+      return { data: null, tableName: getSettingsTableCandidates()[0], error: lastError };
+    }
+
+    async function upsertSettings(payload) {
+      let lastError = null;
+
+      for (const tableName of getSettingsTableCandidates()) {
+        try {
+          const { error } = await client
+            .from(tableName)
+            .upsert(payload, { onConflict: "user_id" });
+
+          if (!error) {
+            return { success: true, tableName };
+          }
+
+          if (!isMissingRelationError(error)) {
+            console.error("upsertSettings error", error);
+            return { success: false, tableName, error };
+          }
+
+          lastError = error;
+        } catch (err) {
+          throw err;
+        }
+      }
+
+      if (lastError) {
+        console.error("upsertSettings error", lastError);
+      }
+
+      return { success: false, tableName: getSettingsTableCandidates()[0], error: lastError };
     }
 
     function updateUI() {
@@ -188,16 +385,7 @@
 
     // パスワードの表示/非表示切替
     document.getElementById("loginpasswordview").addEventListener("click", () => {
-      const passwordInput = document.getElementById("loginPassword");
-      const loginpasswordViewBtn = document.getElementById("loginpasswordview");
-
-      if (passwordInput.type === "password") {
-        passwordInput.type = "text";
-        loginpasswordViewBtn.innerHTML = '<i class="fa-solid fa-eye"></i>';
-      } else {
-        passwordInput.type = "password";
-        loginpasswordViewBtn.innerHTML = '<i class="fa-solid fa-eye-slash"></i>';
-      }
+      togglePasswordVisibility("loginPassword", "loginpasswordview");
     });
 
     // 表示設定ボタンで表示変更画面に遷移
@@ -205,226 +393,117 @@
       showSection("appearanceSection");
     });
 
-    //　色変更
-    let saveTimeout = null;
-
-    document.addEventListener("DOMContentLoaded", async () => {
-      // 要素取得
+    async function initializeAppearanceSettings() {
       const themeColorInput = document.getElementById("themeColor");
       const cardColorInput = document.getElementById("cardColor");
       const textColorInput = document.getElementById("textColor");
-
-      // ヘルパー
-      const rgbToHex = (rgb) => {
-        if (!rgb) return "#000000";
-        if (rgb.startsWith("#")) return rgb;
-        const result = rgb.match(/\d+/g);
-        if (!result) return "#000000";
-        return (
-          "#" +
-          result
-            .slice(0, 3)
-            .map(x => ("0" + parseInt(x).toString(16)).slice(-2))
-            .join("")
-        );
+      const saveAppearanceBtn = document.getElementById("saveAppearanceBtn");
+      const appearanceMessage = document.getElementById("appearanceMessage");
+      const colorInputs = {
+        theme: themeColorInput,
+        card: cardColorInput,
+        text: textColorInput
       };
-      const isValidHex = (hex) => /^#([0-9A-Fa-f]{6})$/.test(hex);
+
+      function clearAppearanceMessage() {
+        if (appearanceMessage) appearanceMessage.textContent = "";
+      }
+
+      function applyLocalAppearance() {
+        const colors = getAppearanceFromStorageOrCss();
+        syncAppearanceInputs(colorInputs, colors);
+        applyAppearanceSettings(colors);
+      }
+
+      function bindColorInput(input, cssVariable, storageKey, afterApply) {
+        if (!input) return;
+
+        input.addEventListener("input", () => {
+          const value = input.value;
+          if (!isValidHex(value)) return;
+
+          document.body.style.setProperty(cssVariable, value);
+          localStorage.setItem(storageKey, value);
+          if (afterApply) afterApply(value);
+          clearAppearanceMessage();
+        });
+      }
 
       // DBから設定を読み込む（ログイン済み前提）
       try {
-        const { data: user, error: userErr } = await client.auth.getUser();
-        if (userErr) throw userErr;
-        const currentUser = user?.data?.user;
-        if (!currentUser) {
-          // 未ログイン時はlocalStorageのみ利用
-          applyLocalOrCss();
-          bindInputs();
-          return;
-        }
-
-        const userId = currentUser.id;
-
-        // DBから設定取得
-        const { data, error } = await client
-          .from('Settings')
-          .select('*')
-          .eq('user_id', userId)
-          .single();
-
-        if (error && error.code !== 'PGRST116') {
-          console.error('Settings fetch error', error);
-        }
-
-        if (data) {
-          // DB値を適用
-          const bg = data.background_color || getComputedStyle(document.body).getPropertyValue("--background-color") || '';
-          const theme = data.theme_color || getComputedStyle(document.body).getPropertyValue("--theme-color") || '';
-          const card = data.card_color || getComputedStyle(document.body).getPropertyValue("--card-color") || '';
-          const text = data.text_color || getComputedStyle(document.body).getPropertyValue("--text-color") || '';
-
-          if (theme) {
-            const t = rgbToHex(theme.trim());
-            document.body.style.setProperty("--theme-color", t);
-            localStorage.setItem("themeColor", t);
-            if (themeColorInput) themeColorInput.value = t;
-          }
-          if (card) {
-            const c = rgbToHex(card.trim());
-            document.body.style.setProperty("--card-color", c);
-            localStorage.setItem("cardColor", c);
-            if (cardColorInput) cardColorInput.value = c;
-          }
-          if (text) {
-            const tx = rgbToHex(text.trim());
-            document.body.style.setProperty("--text-color", tx);
-            localStorage.setItem("textColor", tx);
-            if (textColorInput) textColorInput.value = tx;
-            document.querySelectorAll("p, label, .input, .menu-item, select").forEach(el => {
-              el.style.color = tx;
-            });
-          }
+        const activeUser = await getActiveUser();
+        if (!activeUser) {
+          applyLocalAppearance();
         } else {
-          // DBに設定がない場合はlocalStorage→DB保存
-          const savedTheme = localStorage.getItem("themeColor");
-          const savedCard = localStorage.getItem("cardColor");
-          const savedText = localStorage.getItem("textColor");
+          const userId = activeUser.id;
+          const { data, error, tableName } = await fetchSettingsByUserId(userId);
 
-          if (savedTheme) {
-            document.body.style.setProperty("--theme-color", savedTheme);
-            if (themeColorInput) themeColorInput.value = savedTheme;
-          }
-          if (savedCard) {
-            document.body.style.setProperty("--card-color", savedCard);
-            if (cardColorInput) cardColorInput.value = savedCard;
-          }
-          if (savedText) {
-            document.body.style.setProperty("--text-color", savedText);
-            if (textColorInput) textColorInput.value = savedText;
-            document.querySelectorAll("p, label, .input, .menu-item, select").forEach(el => {
-              el.style.color = savedText;
-            });
+          if (error) {
+            console.error(`Settings fetch error (${tableName})`, error);
+            if (appearanceMessage) {
+              appearanceMessage.textContent = getSupabaseHint(error);
+            }
           }
 
-          // DBにupsert（保存）
-          const toSave = {
-            user_id: userId,
-            theme_color: savedTheme || null,
-            card_color: savedCard || null,
-            text_color: savedText || null,
-            preferences: {}
-          };
-          if (toSave.theme_color || toSave.card_color || toSave.text_color) {
-            await upsertSettings(toSave);
+          if (data) {
+            const colors = {
+              themeColor: rgbToHex((data.theme_color || getComputedStyle(document.body).getPropertyValue("--theme-color")).trim()),
+              cardColor: rgbToHex((data.card_color || getComputedStyle(document.body).getPropertyValue("--card-color")).trim()),
+              textColor: rgbToHex((data.text_color || getComputedStyle(document.body).getPropertyValue("--text-color")).trim())
+            };
+            syncAppearanceInputs(colorInputs, colors);
+            applyAppearanceSettings(colors);
+          } else {
+            applyLocalAppearance();
+            const toSave = buildSettingsPayload(userId);
+            if (toSave.theme_color || toSave.card_color || toSave.text_color) {
+              const result = await upsertSettings(toSave);
+              if (!result.success) {
+                console.error("Initial settings save failed", result.error);
+              }
+            }
           }
         }
       } catch (err) {
         console.error('Error during settings sync', err);
-        applyLocalOrCss();
+        if (appearanceMessage) {
+          appearanceMessage.textContent = getSupabaseHint(err);
+        }
+        applyLocalAppearance();
       }
 
-      // 入力イベントバインド
-      bindInputs();
+      bindColorInput(themeColorInput, "--theme-color", "themeColor");
+      bindColorInput(cardColorInput, "--card-color", "cardColor");
+      bindColorInput(textColorInput, "--text-color", "textColor", updateTextColorElements);
 
-      // localStorageを適用して入力へ反映
-      function applyLocalOrCss() {
-        const themeColor = getComputedStyle(document.body).getPropertyValue("--theme-color");
-        const cardColor = getComputedStyle(document.body).getPropertyValue("--card-color");
-        const textColor = getComputedStyle(document.body).getPropertyValue("--text-color");
-
-        const savedTheme = localStorage.getItem("themeColor") || rgbToHex(themeColor);
-        const savedCard = localStorage.getItem("cardColor") || rgbToHex(cardColor);
-        const savedText = localStorage.getItem("textColor") || rgbToHex(textColor);
-
-        if (themeColorInput) themeColorInput.value = savedTheme;
-        if (cardColorInput) cardColorInput.value = savedCard;
-        if (textColorInput) textColorInput.value = savedText;
-
-        document.body.style.setProperty("--theme-color", savedTheme);
-        document.body.style.setProperty("--card-color", savedCard);
-        document.body.style.setProperty("--text-color", savedText);
-        document.querySelectorAll("p, label, .input, .menu-item, select").forEach(el => {
-          el.style.color = savedText;
+      if (saveAppearanceBtn) {
+        saveAppearanceBtn.addEventListener("click", async () => {
+          if (appearanceMessage) appearanceMessage.textContent = "保存中...";
+          const saved = await saveCurrentSettings();
+          if (!appearanceMessage) return;
+          appearanceMessage.textContent = saved.success
+            ? "現在の色をデータベースに保存しました。"
+            : getSupabaseHint(saved?.error) || "保存するにはログインが必要です。";
         });
-      }
-
-      // 入力イベントバインド関数
-      function bindInputs() {
-        if (themeColorInput) {
-          themeColorInput.addEventListener("input", async () => {
-            const val = themeColorInput.value;
-            if (!isValidHex(val)) return;
-            document.body.style.setProperty("--theme-color", val);
-            localStorage.setItem("themeColor", val);
-            await saveCurrentSettingsDebounced();
-          });
-        }
-        if (cardColorInput) {
-          cardColorInput.addEventListener("input", async () => {
-            const val = cardColorInput.value;
-            if (!isValidHex(val)) return;
-            document.body.style.setProperty("--card-color", val);
-            localStorage.setItem("cardColor", val);
-            await saveCurrentSettingsDebounced();
-          });
-        }
-        if (textColorInput) {
-          textColorInput.addEventListener("input", async () => {
-            const val = textColorInput.value;
-            if (!isValidHex(val)) return;
-            document.body.style.setProperty("--text-color", val);
-            localStorage.setItem("textColor", val);
-            document.querySelectorAll("p, label, .input, .menu-item, select").forEach(el => {
-              el.style.color = val;
-            });
-            await saveCurrentSettingsDebounced();
-          });
-        }
-      }
-
-      // Debounce保存（短時間の連打を防ぐ）
-      async function saveCurrentSettingsDebounced() {
-        if (saveTimeout) clearTimeout(saveTimeout);
-        saveTimeout = setTimeout(async () => {
-          await saveCurrentSettings();
-        }, 600);
       }
 
       // 現在のCSS/localStorageをDBに保存（upsert）
       async function saveCurrentSettings() {
         try {
-          const { data: user, error: userErr } = await client.auth.getUser();
-          if (userErr) throw userErr;
-          const currentUser = user?.data?.user;
-          if (!currentUser) return;
+          const activeUser = await getActiveUser();
+          if (!activeUser) return { success: false, error: new Error("ログインが必要です。") };
 
-          const toSave = {
-            user_id: currentUser.id,
-            theme_color: localStorage.getItem("themeColor") || null,
-            card_color: localStorage.getItem("cardColor") || null,
-            text_color: localStorage.getItem("textColor") || null,
-            preferences: {}
-          };
-          if (!toSave.theme_color && !toSave.card_color && !toSave.text_color) return;
-          await upsertSettings(toSave);
+          const toSave = buildSettingsPayload(activeUser.id);
+          if (!toSave.theme_color && !toSave.card_color && !toSave.text_color) {
+            return { success: false, error: new Error("保存する色がありません。") };
+          }
+          return await upsertSettings(toSave);
         } catch (err) {
           console.error('saveCurrentSettings error', err);
+          return { success: false, error: err };
         }
       }
-
-      // upsert実装：INSERT ... ON CONFLICT (user_id) DO UPDATE
-      async function upsertSettings(payload) {
-        try {
-          const { error } = await client
-            .from('Settings')
-            .upsert(payload, { onConflict: 'user_id' });
-          if (error) {
-            console.error('upsertSettings error', error);
-          }
-        } catch (err) {
-          console.error('upsertSettings exception', err);
-        }
-      }
-    });
+    }
 
     // ふりがなをひらがなに固定する
     function normalizeTyping(v) {
@@ -447,65 +526,36 @@
         );
     }
 
-    const saveButton = document.getElementById("submitBtn");
-
     // 一覧を読み込む
     async function loadBooks() {
-      const tableName = getBooksTable();
+      try {
+        const tableName = getBooksTable();
 
-      const { data, error } = await client
-        .from(tableName)
-        .select("*");
+        const { data, error } = await client
+          .from(tableName)
+          .select("*");
 
-      if (error) {
-        console.error("読み込み失敗:", error);
-        return;
-      }
-
-      if (currentSort === "reading") {
-        data.sort((a, b) => {
-          const textA = a.yomigana || a.title || "";
-          const textB = b.yomigana || b.title || "";
-          return textA.localeCompare(textB, 'ja');
-        });
-      } else if (currentSort === "old") {
-        data.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
-      } else {
-        data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-      }
-
-      // リスト生成
-      const list = document.getElementById("bookList");
-      list.innerHTML = "";
-
-      // 日付フォーマット
-      function formatDate(created_at) {
-        const now = new Date();
-        const date = new Date(created_at);
-        const diffMs = now - date;
-        const diffSec = Math.floor(diffMs / 1000);
-        const diffMin = Math.floor(diffSec / 60);
-        const diffHour = Math.floor(diffMin / 60);
-        const diffDay = Math.floor(diffHour / 24);
-        const diffWeek = Math.floor(diffDay / 7);
-        const diffMonth = Math.floor(diffDay / 30);
-        const diffYear = Math.floor(diffDay / 365);
-          
-        if (diffDay === 0) {
-          if (diffHour > 0) return `${diffHour}時間前`;
-          if (diffMin > 0) return `${diffMin}分前`;
-          return "たった今";
-        } else if (diffDay === 1) return "昨日";
-        else if (diffDay === 2)return "おととい";
-        else if (diffDay >= 3 && diffDay <= 7) return `${diffDay}日前`;
-        else if (diffWeek <= 4) {
-          return `${diffWeek}週間前`;
-        } else if (diffMonth <= 11) {
-          return `${diffMonth}ヶ月前`;
-        } else {
-          return `${diffYear}年前`;
+        if (error) {
+          console.error("読み込み失敗:", error);
+          alert(`書籍データの読み込みに失敗しました。\n${getSupabaseHint(error)}`);
+          return;
         }
-      }
+
+        if (currentSort === "reading") {
+          data.sort((a, b) => {
+            const textA = a.yomigana || a.title || "";
+            const textB = b.yomigana || b.title || "";
+            return textA.localeCompare(textB, 'ja');
+          });
+        } else if (currentSort === "old") {
+          data.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+        } else {
+          data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        }
+
+        // リスト生成
+        const list = document.getElementById("bookList");
+        list.innerHTML = "";
 
       const menuHtml = currentUser ? `
         <button class="menu-btn">⋮</button>
@@ -515,10 +565,10 @@
         </div>
       ` : "";
 
-      data.forEach(book => {
-        const li = document.createElement("li");
-        li.className = "card";
-        li.dataset.yomigana = book.yomigana || "";
+        data.forEach(book => {
+          const li = document.createElement("li");
+          li.className = "card";
+          li.dataset.yomigana = book.yomigana || "";
 
         li.innerHTML = `
           <div class="card-top">
@@ -591,8 +641,12 @@
             li.appendChild(menu);
           };
         };
-        list.appendChild(li);
-      });
+          list.appendChild(li);
+        });
+      } catch (err) {
+        console.error("読み込み失敗:", err);
+        alert(`書籍データの読み込みに失敗しました。\n${getSupabaseHint(err)}`);
+      }
     }
 
     // 登録 or 更新
@@ -793,6 +847,32 @@
 
     updateSearchModeUI();
 
+    function formatDate(createdAt) {
+      const now = new Date();
+      const date = new Date(createdAt);
+      const diffMs = now - date;
+      const diffSec = Math.floor(diffMs / 1000);
+      const diffMin = Math.floor(diffSec / 60);
+      const diffHour = Math.floor(diffMin / 60);
+      const diffDay = Math.floor(diffHour / 24);
+      const diffWeek = Math.floor(diffDay / 7);
+      const diffMonth = Math.floor(diffDay / 30);
+      const diffYear = Math.floor(diffDay / 365);
+
+      if (diffDay === 0) {
+        if (diffHour > 0) return `${diffHour}時間前`;
+        if (diffMin > 0) return `${diffMin}分前`;
+        return "たった今";
+      }
+
+      if (diffDay === 1) return "昨日";
+      if (diffDay === 2) return "おととい";
+      if (diffDay >= 3 && diffDay <= 7) return `${diffDay}日前`;
+      if (diffWeek <= 4) return `${diffWeek}週間前`;
+      if (diffMonth <= 11) return `${diffMonth}ヶ月前`;
+      return `${diffYear}年前`;
+    }
+
     // 編集
     function editBook(book) {
       document.getElementById("title").value = book.title;
@@ -858,26 +938,6 @@
       }
     });
 
-    // ログイン状態の確認
-    async function checkLogin() {
-      const { data } = await client.auth.getSession();
-      if (data.session) {
-        currentUser = data.session.user;
-        console.log("ログイン中:", currentUser);
-      } else {
-        currentUser = null;
-        console.log("未ログイン:");
-      }
-    };
-
-    // ログイン成功時
-    async function onLoginSuccess(user) {
-      currentUser = user;
-      uiState = "auth";
-      updateUI();
-      await loadBooks();
-    };
-
     // ホームメニュー
     const homeMenuBtn = document.getElementById("homeMenuBtn");
     const homeMenu = document.getElementById("homeMenu");
@@ -907,7 +967,6 @@
         return;
       }
 
-      console.log("ログアウト成功");
       currentUser = null;
       uiState = "login";
       updateUI();
@@ -915,13 +974,10 @@
 
     // 画面切り替え用関数
     function showSection(sectionId) {
-      // すべてのセクションを非表示
-      document.getElementById("loginScreen").style.display = "none";
-      document.getElementById("mainContent").style.display = "none";
-      document.getElementById("changePasswordSection").style.display = "none";
-      document.getElementById("appearanceSection").style.display = "none";
+      SECTION_IDS.forEach(id => {
+        document.getElementById(id).style.display = "none";
+      });
 
-      // 指定セクションだけ表示
       document.getElementById(sectionId).style.display = "block";
     }
 
@@ -975,30 +1031,12 @@
 
     // 新パスワードの表示/非表示切替
     document.getElementById("newpasswordview").addEventListener("click", () => {
-      const passwordInput = document.getElementById("newPassword");
-      const newpasswordViewBtn = document.getElementById("newpasswordview");
-
-      if (passwordInput.type === "password") {
-        passwordInput.type = "text";
-        newpasswordViewBtn.innerHTML = '<i class="fa-solid fa-eye"></i>';
-      } else {
-        passwordInput.type = "password";
-        newpasswordViewBtn.innerHTML = '<i class="fa-solid fa-eye-slash"></i>';
-      }
+      togglePasswordVisibility("newPassword", "newpasswordview");
     });
 
     // 旧パスワードの表示/非表示切替
     document.getElementById("oldpasswordview").addEventListener("click", () => {
-      const passwordInput = document.getElementById("oldPassword");
-      const oldpasswordViewBtn = document.getElementById("oldpasswordview");
-
-      if (passwordInput.type === "password") {
-        passwordInput.type = "text";
-        oldpasswordViewBtn.innerHTML = '<i class="fa-solid fa-eye"></i>';
-      } else {
-        passwordInput.type = "password";
-        oldpasswordViewBtn.innerHTML = '<i class="fa-solid fa-eye-slash"></i>';
-      }
+      togglePasswordVisibility("oldPassword", "oldpasswordview");
     });
 
     // 戻るボタンで遷移
@@ -1009,8 +1047,7 @@
       });
     });
 
-    // 初期表示
-    document.addEventListener("DOMContentLoaded", async () => {
+    async function initializeApp() {
       const { data } = await client.auth.getSession();
 
       if (data.session) {
@@ -1022,8 +1059,13 @@
       }
 
       updateUI();
-      if (uiState == "auth") {await loadBooks();}
-    });
+      await initializeAppearanceSettings();
+      if (uiState === "auth") {
+        await loadBooks();
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", initializeApp);
 
     // 推薦API呼び出し
     async function fetchRecommendations(title, author) {

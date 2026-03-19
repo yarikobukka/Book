@@ -172,6 +172,10 @@ p {
   font-size: 16px;
 }
 
+.appearance-message {
+  min-height: 1.5em;
+}
+
 /* ===== 検索ボックス内ボタン ===== */
 .search-wrapper {
   margin-bottom: 16px;
