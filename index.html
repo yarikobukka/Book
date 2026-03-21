@@ -897,8 +897,7 @@
       loadBooks();
     });
 
-    // ログイン
-    document.getElementById("loginBtn").addEventListener("click", async () => {
+    async function handleLogin() {
       const email = document.getElementById("loginEmail").value.trim();
       const password = document.getElementById("loginPassword").value;
       const message = document.getElementById("loginMessage");
@@ -918,6 +917,16 @@
         updateUI();
         loadBooks();
       }
+    }
+
+    // ログイン
+    document.getElementById("loginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      await handleLogin();
+    });
+
+    document.getElementById("loginBtn").addEventListener("click", async () => {
+      await handleLogin();
     });
 
     // 新規登録
