@@ -3,11 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <title>Biblio Radar</title>
+  <script src="app-config.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.43.3/dist/umd/supabase.min.js"></script>
   <link rel="stylesheet" href="list.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
 <body>
+  <div id="supabaseStatusBanner" style="display:none;"></div>
   <!-- ログイン・新規登録用画面-->
 
   <div id="loginScreen">
@@ -149,11 +151,13 @@
   </div>
 
   <script>
+    const appConfig = window.APP_CONFIG || {};
+    const supabaseUrl = appConfig.supabaseUrl || "";
+    const supabaseKey = appConfig.supabaseKey || "";
     const { createClient } = supabase;
-    const client = createClient(
-      "https://urfhwurcnoexapukhcey.supabase.co",
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVyZmh3dXJjbm9leGFwdWtoY2V5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTkyMDM5MzAsImV4cCI6MjA3NDc3OTkzMH0.bHVwIfrGVm_pbbSh1UByqgkE3Uq22a6IXcYnZmcJo-Y"
-    );
+    const client = supabaseUrl && supabaseKey
+      ? createClient(supabaseUrl, supabaseKey)
+      : null;
 
     let currentSort = "new";
 
@@ -180,7 +184,80 @@
       return error instanceof TypeError && error.message === "Failed to fetch";
     }
 
+    function isSupabaseConfigured() {
+      return Boolean(client);
+    }
+
+    function decodeJwtPayload(token) {
+      try {
+        const payload = token.split(".")[1];
+        if (!payload) return null;
+        const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
+        const padded = normalized.padEnd(normalized.length + ((4 - normalized.length % 4) % 4), "=");
+        return JSON.parse(atob(padded));
+      } catch (_error) {
+        return null;
+      }
+    }
+
+    function isLegacyAnonJwtKey(key) {
+      const payload = decodeJwtPayload(key);
+      return Boolean(payload && payload.role === "anon");
+    }
+
+    function showSupabaseStatusBanner(message, tone = "warning") {
+      const banner = document.getElementById("supabaseStatusBanner");
+      if (!banner) return;
+
+      banner.textContent = message;
+      banner.style.display = "block";
+      banner.style.padding = "12px 16px";
+      banner.style.textAlign = "center";
+      banner.style.fontSize = "14px";
+      banner.style.fontWeight = "600";
+      banner.style.backgroundColor = tone === "error" ? "#ffe0e0" : "#fff4d6";
+      banner.style.color = tone === "error" ? "#7a1212" : "#6b4f00";
+      banner.style.borderBottom = tone === "error"
+        ? "1px solid #f3b0b0"
+        : "1px solid #e8d18b";
+    }
+
+    function initializeSupabaseKeyStatus() {
+      if (!isSupabaseConfigured()) {
+        showSupabaseStatusBanner(
+          "Supabase 設定が未完了です。app-config.js に Project URL と publishable key を設定してください。",
+          "error"
+        );
+        return;
+      }
+
+      if (isLegacyAnonJwtKey(supabaseKey)) {
+        showSupabaseStatusBanner(
+          "現在は旧 anon key を使用中です。Supabase Dashboard の publishable key へ差し替えると移行準備が整います。"
+        );
+        console.warn("Legacy Supabase anon key detected. Migrate to an sb_publishable key.");
+      }
+    }
+
+    function ensureSupabaseConfigured() {
+      if (isSupabaseConfigured()) {
+        return true;
+      }
+
+      const message =
+        "Supabase 設定が見つかりません。app-config.js に Project URL と publishable key（移行前は anon key）を設定してください。";
+      const loginMessage = document.getElementById("loginMessage");
+      if (loginMessage) {
+        loginMessage.textContent = message;
+      }
+      return false;
+    }
+
     function getSupabaseHint(error) {
+      if (!isSupabaseConfigured()) {
+        return "Supabase 設定が未完了です。app-config.js に URL と publishable key（または既存の anon key）を設定してください。";
+      }
+
       if (isNetworkFetchError(error)) {
         if (location.protocol === "file:") {
           return "HTMLファイルを直接開いている可能性があります。Live Server などで http://localhost から開いてください。";
@@ -188,7 +265,7 @@
         if (navigator.onLine === false) {
           return "オフラインのため Supabase に接続できません。";
         }
-        return "Supabase への通信に失敗しました。URL・anon key・ネット接続・ブラウザ拡張のブロックを確認してください。";
+        return "Supabase への通信に失敗しました。URL・publishable key（または anon key）・ネット接続・ブラウザ拡張のブロックを確認してください。";
       }
 
       if (error?.code === "42P01" || error?.code === "PGRST205") {
@@ -283,6 +360,10 @@
     }
 
     async function getActiveUser() {
+      if (!ensureSupabaseConfigured()) {
+        return null;
+      }
+
       if (currentUser) {
         return currentUser;
       }
@@ -528,6 +609,10 @@
 
     // 一覧を読み込む
     async function loadBooks() {
+      if (!ensureSupabaseConfigured()) {
+        return;
+      }
+
       try {
         const tableName = getBooksTable();
 
@@ -652,6 +737,10 @@
     // 登録 or 更新
     document.getElementById("bookForm").addEventListener("submit", async (e) => {
       e.preventDefault();
+
+      if (!ensureSupabaseConfigured()) {
+        return;
+      }
 
       const title = document.getElementById("title").value.trim();
       const yomiganaRaw = document.getElementById("yomigana").value;
@@ -884,6 +973,10 @@
 
     // 削除
     async function deleteBook(id) {
+      if (!ensureSupabaseConfigured()) {
+        return;
+      }
+
       if (!confirm("本当に削除しますか？")) return;
       const tableName = getBooksTable();
       const { error } = await client.from(tableName).delete().eq("id", id);
@@ -898,6 +991,10 @@
     });
 
     async function handleLogin() {
+      if (!ensureSupabaseConfigured()) {
+        return;
+      }
+
       const email = document.getElementById("loginEmail").value.trim();
       const password = document.getElementById("loginPassword").value;
       const message = document.getElementById("loginMessage");
@@ -931,6 +1028,10 @@
 
     // 新規登録
     document.getElementById("signupBtn").addEventListener("click", async () => {
+      if (!ensureSupabaseConfigured()) {
+        return;
+      }
+
       const email = document.getElementById("loginEmail").value;
       const password = document.getElementById("loginPassword").value;
       const message = document.getElementById("loginMessage");
@@ -968,6 +1069,10 @@
     const logoutBtn = document.getElementById("logoutBtn");
 
     logoutBtn.addEventListener("click", async () => {
+      if (!ensureSupabaseConfigured()) {
+        return;
+      }
+
       const { error } = await client.auth.signOut();
 
       if (error) {
@@ -998,6 +1103,10 @@
     // パスワード変更
     document.getElementById("changePasswordForm").addEventListener("submit", async (e) => {
       e.preventDefault();
+
+      if (!ensureSupabaseConfigured()) {
+        return;
+      }
 
       const oldPassword = document.getElementById("oldPassword").value;
       const newPassword = document.getElementById("newPassword").value;
@@ -1057,6 +1166,14 @@
     });
 
     async function initializeApp() {
+      initializeSupabaseKeyStatus();
+
+      if (!ensureSupabaseConfigured()) {
+        updateUI();
+        await initializeAppearanceSettings();
+        return;
+      }
+
       const { data } = await client.auth.getSession();
 
       if (data.session) {
