@@ -151,7 +151,9 @@
   </div>
 
   <script>
-    const appConfig = window.APP_CONFIG || {};
+    // ===== Supabase 接続と基本状態 =====
+    // Supabase の接続情報を読み込み、クライアントを用意する
+    const appConfig = globalThis.APP_CONFIG || {};
     const supabaseUrl = appConfig.supabaseUrl || "";
     const supabaseKey = appConfig.supabaseKey || "";
     const { createClient } = supabase;
@@ -172,6 +174,8 @@
       "appearanceSection"
     ];
 
+    // ===== テーブル名・エラーメッセージ補助 =====
+    // テーブル名や候補名をまとめて管理する
     function getBooksTable() {
       return BOOKS_TABLE;
     }
@@ -184,6 +188,7 @@
       return error instanceof TypeError && error.message === "Failed to fetch";
     }
 
+    // Supabase の設定状態とキー種別を確認し、必要なら警告を出す
     function isSupabaseConfigured() {
       return Boolean(client);
     }
@@ -279,6 +284,8 @@
       return error?.code === "42P01" || error?.code === "PGRST205";
     }
 
+    // ===== 表示設定まわりの共通処理 =====
+    // 色設定の変換・保存・画面反映に使う補助関数
     function rgbToHex(rgb) {
       if (!rgb) return "#000000";
       if (rgb.startsWith("#")) return rgb;
@@ -346,6 +353,8 @@
       };
     }
 
+    // ===== 入力欄まわりの共通処理 =====
+    // パスワード入力欄の表示/非表示を切り替える
     function togglePasswordVisibility(inputId, buttonId) {
       const passwordInput = document.getElementById(inputId);
       const toggleButton = document.getElementById(buttonId);
@@ -359,6 +368,8 @@
         : '<i class="fa-solid fa-eye-slash"></i>';
     }
 
+    // ===== ユーザー情報と Settings のDB操作 =====
+    // ログイン中ユーザーの取得と Settings テーブルの読み書き
     async function getActiveUser() {
       if (!ensureSupabaseConfigured()) {
         return null;
@@ -440,6 +451,8 @@
       return { success: false, tableName: getSettingsTableCandidates()[0], error: lastError };
     }
 
+    // ===== 画面表示の切り替え =====
+    // ログイン状態に応じて表示する画面を切り替える
     function updateUI() {
       const loginScreen = document.getElementById("loginScreen");
       const mainContent = document.getElementById("mainContent");
@@ -464,6 +477,7 @@
       }
     }
 
+    // ===== 画面内の単発UIイベント =====
     // パスワードの表示/非表示切替
     document.getElementById("loginpasswordview").addEventListener("click", () => {
       togglePasswordVisibility("loginPassword", "loginpasswordview");
@@ -474,6 +488,8 @@
       showSection("appearanceSection");
     });
 
+    // ===== 表示設定の初期化と保存 =====
+    // 表示設定の初期読み込み、入力反映、保存処理
     async function initializeAppearanceSettings() {
       const themeColorInput = document.getElementById("themeColor");
       const cardColorInput = document.getElementById("cardColor");
@@ -586,6 +602,8 @@
       }
     }
 
+    // ===== 書籍入力値の正規化 =====
+    // 入力値を保存しやすい形にそろえる
     // ふりがなをひらがなに固定する
     function normalizeTyping(v) {
       return v.normalize("NFKC");
@@ -607,6 +625,8 @@
         );
     }
 
+    // ===== 書籍一覧の表示 =====
+    // books テーブルから一覧を読み込み、カードとして表示する
     // 一覧を読み込む
     async function loadBooks() {
       if (!ensureSupabaseConfigured()) {
@@ -734,6 +754,8 @@
       }
     }
 
+    // ===== 書籍の登録と更新 =====
+    // 書籍の新規登録と既存データの更新を行う
     // 登録 or 更新
     document.getElementById("bookForm").addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -850,6 +872,8 @@
       document.getElementById("submitBtn").textContent = "登録";
     });
 
+    // ===== 検索と並び替え =====
+    // 一覧の検索条件と並び順を制御する
     // 検索機能
 
     function runSearch() {
@@ -962,6 +986,8 @@
       return `${diffYear}年前`;
     }
 
+    // ===== 書籍カードの操作 =====
+    // 書籍カードをフォームに読み戻したり削除したりする
     // 編集
     function editBook(book) {
       document.getElementById("title").value = book.title;
@@ -985,6 +1011,8 @@
       loadBooks();
     }
 
+    // ===== 認証処理 =====
+    // 認証まわりの処理
     document.getElementById("selectOrder").addEventListener("change", (e) => {
       currentSort = e.target.value;
       loadBooks();
@@ -1048,6 +1076,8 @@
       }
     });
 
+    // ===== ホームメニュー =====
+    // ホームメニューの開閉とログアウト処理
     // ホームメニュー
     const homeMenuBtn = document.getElementById("homeMenuBtn");
     const homeMenu = document.getElementById("homeMenu");
@@ -1086,6 +1116,8 @@
       updateUI();
     });
 
+    // ===== 画面遷移とパスワード変更 =====
+    // 画面遷移とパスワード変更処理
     // 画面切り替え用関数
     function showSection(sectionId) {
       SECTION_IDS.forEach(id => {
@@ -1165,6 +1197,8 @@
       });
     });
 
+    // 起動時にセッション復元と初期表示を行う
+    // ===== 起動時の初期化 =====
     async function initializeApp() {
       initializeSupabaseKeyStatus();
 
@@ -1193,6 +1227,8 @@
 
     document.addEventListener("DOMContentLoaded", initializeApp);
 
+    // ===== 推薦API呼び出し =====
+    // 外部の推薦APIを呼び出しておすすめ本を取得する
     // 推薦API呼び出し
     async function fetchRecommendations(title, author) {
       try {
