@@ -188,7 +188,7 @@
       return error instanceof TypeError && error.message === "Failed to fetch";
     }
 
-    // Supabase の設定状態とキー種別を確認し、必要なら警告を出す
+    // Supabase の設定状態とキー種別を確認、必要なら警告を出す
     function isSupabaseConfigured() {
       return Boolean(client);
     }
