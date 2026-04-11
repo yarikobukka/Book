@@ -604,19 +604,7 @@
 
     // ===== 書籍入力値の正規化 =====
     // 入力値を保存しやすい形にそろえる
-    // ふりがなをひらがなに固定する
-    function normalizeTyping(v) {
-      return v.normalize("NFKC");
-    }
-
-    const yomiganaInput = document.getElementById("yomigana");
-
-    if (yomiganaInput) {
-      yomiganaInput.addEventListener("input", () => {
-        yomiganaInput.value = normalizeTyping(yomiganaInput.value);
-      });
-    }
-
+    // 保存時にふりがなをひらがなへそろえる
     function normalizeForSave(v) {
       return v
         .normalize("NFKC")
@@ -766,7 +754,11 @@
 
       const title = document.getElementById("title").value.trim();
       const yomiganaRaw = document.getElementById("yomigana").value;
-      const yomigana = normalizeForSave(yomiganaRaw);
+      const yomigana = yomiganaRaw
+        .normalize("NFKC")
+        .replace(/[\u30a1-\u30f6]/g, c =>
+          String.fromCharCode(c.charCodeAt(0) - 0x60)
+        );
       const author = document.getElementById("author").value.trim();
       const editId = document.getElementById("editId").value;
 
