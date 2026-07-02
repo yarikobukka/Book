@@ -1224,11 +1224,12 @@
     // 推薦API呼び出し
     async function fetchRecommendations(title, author) {
       try {
-        const response = await fetch("https://backend-5x35.onrender.com/api/books", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title, author })
-        });
+        // const response = await fetch("https://backend-5x35.onrender.com/api/books", {
+        //   method: "POST",
+        //   headers: { "Content-Type": "application/json" },
+        //   body: JSON.stringify({ title, author })
+        // });
+        throw new Error("推薦APIのURLがコメントアウトされています");
 
         const data = await response.json();
 
