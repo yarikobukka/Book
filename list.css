@@ -10,6 +10,30 @@ body {
   padding: 0;
 }
 
+.is-hidden {
+  display: none !important;
+}
+
+#supabaseStatusBanner {
+  display: block;
+  padding: 12px 16px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+#supabaseStatusBanner.warning {
+  background-color: #fff4d6;
+  color: #6b4f00;
+  border-bottom: 1px solid #e8d18b;
+}
+
+#supabaseStatusBanner.error {
+  background-color: #ffe0e0;
+  color: #7a1212;
+  border-bottom: 1px solid #f3b0b0;
+}
+
 h1 {
   text-align: center;
   color: var(--theme-color);
@@ -43,6 +67,7 @@ p {
   border: 1px solid #ccc;
   border-radius: 8px;
   font-size: 16px;
+  color: var(--text-color);
 }
 .button {
   display: block;
@@ -118,7 +143,6 @@ p {
   border: 1px solid #ccc;
   box-shadow: 0 2px 6px rgba(0,0,0,0.2);
   z-index: 1000;
-  display: none;
   color: #ffffff;
   top: 0;
   bottom: 0;
@@ -145,12 +169,15 @@ p {
 }
 
 .return-btn {
+  align-self: flex-start;
   width: 40px;
   height: 40px;
+  margin: 8px 0 0 8px;
   background: none;
   border: none;
   font-size: 24px;
   color: rgb(81, 86, 97);
+  cursor: pointer;
 }
 
 .change-password-section {
@@ -335,6 +362,13 @@ p {
 .menu.open {
   display: block;
 }
+
+.menu.card-menu-floating {
+  position: fixed;
+  right: auto;
+  z-index: 9999;
+}
+
 .menu button {
   display: block;
   width: 100%;
